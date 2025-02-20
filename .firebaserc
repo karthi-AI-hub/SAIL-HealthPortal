@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "ehms-sail",
+    "ehms-sail": "ehms-sail"
+  },
+  "targets": {},
+  "etags": {}
+}
