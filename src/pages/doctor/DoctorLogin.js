@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeSlash, Envelope, Key } from "react-bootstrap-icons";
-import { db } from "../firebase";
+import { db } from "../../firebase";
 import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { doc, updateDoc, query, where, collection, getDocs, serverTimestamp } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useDoctor } from "../context/DoctorContext";
+import { useDoctor } from "../../context/DoctorContext";
 
 const DoctorLogin = () => {
   const [email, setEmail] = useState("");

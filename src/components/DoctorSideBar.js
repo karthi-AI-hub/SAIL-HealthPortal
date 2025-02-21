@@ -35,7 +35,7 @@ import {
   Settings,
 } from "@mui/icons-material";
 
-const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
+const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
   const navigate = useNavigate();
   const auth = getAuth();
   const [logoutDialog, setLogoutDialog] = useState(false);
@@ -45,7 +45,7 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/auth/employee/login");
+      navigate("/auth/doctor/login");
     } catch (error) {
       console.error("Logout Error:", error.message);
     }
@@ -56,12 +56,12 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <Home />, path: "/employee/dashboard" },
-    { text: "Profile", icon: <Person />, path: "/employee/profile" },
-    { text: "Doctors", icon: <LocalHospital />, path: "/employee/doctorslist" },
-    { text: "Reports", icon: <Assignment />, path: "/employee/reports" },
-    { text: "Appointments", icon: <CalendarMonth />, path: "/employee/appointments" },
-    { text: "Tablets & Prescriptions", icon: <Medication />, path: "/employee/tablets" },
+    { text: "Dashboard", icon: <Home />, path: "/doctor/dashboard" },
+    { text: "Profile", icon: <Person />, path: "/doctor/profile" },
+    { text: "Patients", icon: <LocalHospital />, path: "/doctor/patients" },
+    { text: "Reports", icon: <Assignment />, path: "/doctor/reports" },
+    { text: "Appointments", icon: <CalendarMonth />, path: "/doctor/appointments" },
+    { text: "Prescriptions", icon: <Medication />, path: "/doctor/prescriptions" },
   ];
 
   return (
@@ -84,11 +84,11 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
 
           {/* Profile Icon (Top Right) */}
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-            {employee.profileImage ? (
-              <Avatar src={employee.profileImage} sx={{ width: 40, height: 40 }} />
+            {doctor.profileImage ? (
+              <Avatar src={doctor.profileImage} sx={{ width: 40, height: 40 }} />
             ) : (
               <Avatar sx={{ bgcolor: "#ffffff", color: "#002147", fontWeight: "bold", width: 40, height: 40 }}>
-                {getInitials(employee.Name)}
+                {getInitials(doctor.Name)}
               </Avatar>
             )}
           </IconButton>
@@ -96,8 +96,8 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
           {/* Profile Menu */}
           <Menu anchorEl={anchorEl} open={profileMenuOpen} onClose={() => setAnchorEl(null)}>
             <MenuItem disabled>
-              <Typography variant="subtitle1" className="employee-name">
-                {employee.Name || "Loading..."}
+              <Typography variant="subtitle1" className="doctor-name">
+                {doctor.Name || "Loading..."}
               </Typography>
             </MenuItem>
             <Divider />
@@ -132,15 +132,15 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
         {/* Sidebar Header with Profile Info */}
         <Box>
           <Toolbar sx={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px" }}>
-            {employee.profileImage ? (
-              <Avatar src={employee.profileImage} sx={{ width: 60, height: 60, mb: 1 }} />
+            {doctor.profileImage ? (
+              <Avatar src={doctor.profileImage} sx={{ width: 60, height: 60, mb: 1 }} />
             ) : (
               <Avatar sx={{ bgcolor: "#29c8dd", color: "#", width: 60, height: 60, mb: 1 }}>
-                {getInitials(employee.Name)}
+                {getInitials(doctor.Name)}
               </Avatar>
             )}
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#ffffff" }}>{employee.Name || "Loading..."}</Typography>
-            <Typography variant="body2" sx={{ color: "#B0BEC5" }}>{employee.EmployeeId || "Logging in..."}</Typography>
+            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#ffffff" }}>{doctor.Name || "Loading..."}</Typography>
+            <Typography variant="body2" sx={{ color: "#B0BEC5" }}>{doctor.DoctorID || "Logging in..."}</Typography>
           </Toolbar>
 
           <Divider sx={{ bgcolor: "#FFD700", height: 2 }} /> {/* Gold Divider */}
@@ -196,4 +196,4 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
   );
 };
 
-export default EmployeeSidebar;
+export default DoctorSidebar;

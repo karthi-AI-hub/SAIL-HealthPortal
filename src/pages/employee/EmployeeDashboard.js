@@ -49,7 +49,7 @@
 
 
 import React from "react";
-import { useEmployee } from "../context/EmployeeContext";
+import { useEmployee } from "../../context/EmployeeContext";
 
 const EmployeeDashboard = () => {
   const { employee } = useEmployee();

@@ -1,5 +1,5 @@
 import React from "react";
-import { useDoctor } from "../context/DoctorContext";
+import { useDoctor } from "../../context/DoctorContext";
 
 const DoctorDashboard = () => {
   const { doctor } = useDoctor();
