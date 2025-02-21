@@ -2,23 +2,25 @@ import React from "react";
 import { EmployeeProvider } from "./context/EmployeeContext";
 import { DoctorProvider } from "./context/DoctorContext";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+
 import NotFound from "./pages/NotFound";
-import EmployeLogin from "./pages/EmployeLogin";
-import EmployeRegister from "./pages/EmployeeRegister";
-
-import EmployeeLayout from "./components/EmployeeLayout";
-import DoctorLayout from "./components/DoctorLayout";
-import EmployeeProfile from "./pages/EmployeeProfile";
-import EmployeeTablets from "./pages/EmployeeTablets";
-import EmployeeReports from "./pages/EmployeeReports";
-import EmployeeDoctors from "./pages/EmployeeDoctors";
-import EmployeDashboard from "./pages/EmployeeDashboard";
-import EmployeeAppointments from "./pages/EmployeeAppointments";
 import SplashScreen from "./pages/SplashScreen";
-import DoctorRegister from "./pages/DoctorRegister";
-import DoctorLogin from "./pages/DoctorLogin";
 
-import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorLayout from "./components/DoctorLayout";
+import EmployeeLayout from "./components/EmployeeLayout";
+
+import EmployeRegister from "./pages/employee//EmployeeRegister";
+import EmployeLogin from "./pages/employee/EmployeLogin";
+import EmployeeProfile from "./pages/employee/EmployeeProfile";
+import EmployeeTablets from "./pages/employee/EmployeeTablets";
+import EmployeeReports from "./pages/employee/EmployeeReports";
+import EmployeeDoctors from "./pages/employee/EmployeeDoctors";
+import EmployeDashboard from "./pages/employee//EmployeeDashboard";
+import EmployeeAppointments from "./pages/employee/EmployeeAppointments";
+
+import DoctorRegister from "./pages/doctor/DoctorRegister";
+import DoctorLogin from "./pages/doctor/DoctorLogin";
+import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorReports from "./pages/doctor/DoctorReports";
