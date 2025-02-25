@@ -1,22 +1,23 @@
 import React, { useState } from "react";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { Box, Typography, Button, TextField, Modal, IconButton } from "@mui/material";
+import { Box, Typography, Button, TextField, Modal, IconButton, Alert } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import dayjs from "dayjs";
 
 const BookAppointment = ({ open, onClose, doctor, employeeId }) => {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
+  const [error, setError] = useState("");
   const db = getFirestore();
 
   const handleBookAppointment = async () => {
     if (!date || !time) {
-      alert("Please select a date and time.");
+      setError("Please select a date and time.");
       return;
     }
 
     if (!employeeId) {
-      alert("Employee ID is missing.");
+      setError("Employee ID is missing.");
       return;
     }
 
@@ -24,7 +25,7 @@ const BookAppointment = ({ open, onClose, doctor, employeeId }) => {
     const now = dayjs();
 
     if (selectedDateTime.isBefore(now)) {
-      alert("Please select a future date and time.");
+      setError("You have selected a past date or time. Please choose a future date and time.");
       return;
     }
 
@@ -42,7 +43,7 @@ const BookAppointment = ({ open, onClose, doctor, employeeId }) => {
       onClose();
     } catch (error) {
       console.error("Error booking appointment: ", error);
-      alert("Failed to book appointment. Please try again.");
+      setError("Failed to book appointment. Please try again.");
     }
   };
 
@@ -57,6 +58,7 @@ const BookAppointment = ({ open, onClose, doctor, employeeId }) => {
             <CloseIcon />
           </IconButton>
         </Box>
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <TextField
           fullWidth
           type="date"

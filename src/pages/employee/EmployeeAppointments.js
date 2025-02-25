@@ -22,11 +22,14 @@ import {
 } from "@mui/material";
 import { useEmployee } from "../../context/EmployeeContext";
 import { CheckCircle, Pending, Cancel, Schedule } from "@mui/icons-material"; // Icons for appointment status
+import RescheduleDialog from "./../../components/ReScheduleAppointment"; // Import the dialog component
 
 const EmployeeAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [selectedTab, setSelectedTab] = useState("Upcoming");
   const [loading, setLoading] = useState(true);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const db = getFirestore();
   const { employeeId } = useEmployee();
   const theme = useTheme();
@@ -54,8 +57,8 @@ const EmployeeAppointments = () => {
           const appointmentDateTime = new Date(`${appointment.Date} ${appointment.Time}`);
           const now = new Date();
           if (appointment.Status === "Upcoming" && appointmentDateTime < now) {
-            appointment.Status = "Late"; // Update status to "Late"
-            await updateDoc(doc(db, "Appointments", appointment.id), { Status: "Late" }); // Optional: Update Firestore
+            appointment.Status = "Late";
+            await updateDoc(doc(db, "Appointments", appointment.id), { Status: "Late" });
           }
 
           return { ...appointment, doctor: doctorData };
@@ -70,6 +73,38 @@ const EmployeeAppointments = () => {
     }
   };
 
+  const handleOpenRescheduleDialog = (appointment) => {
+    setSelectedAppointment(appointment);
+    setRescheduleDialogOpen(true);
+  };
+
+  const handleCloseRescheduleDialog = () => {
+    setRescheduleDialogOpen(false);
+    setSelectedAppointment(null);
+  };
+
+  const handleSaveReschedule = async (appointmentId, newDate, newTime) => {
+    try {
+      const appointmentDateTime = new Date(`${newDate} ${newTime}`);
+      const now = new Date();
+
+      if (appointmentDateTime < now) {
+        alert("You have selected a past date or time. Please choose a future date and time.");
+        return;
+      }
+
+      await updateDoc(doc(db, "Appointments", appointmentId), {
+        Date: newDate,
+        Time: newTime,
+        Status: "Upcoming",
+      });
+
+      fetchAppointments();
+    } catch (error) {
+      console.error("Error rescheduling appointment:", error);
+    }
+  };
+
   const getStatusIcon = (status) => {
     switch (status) {
       case "Completed":
@@ -79,7 +114,7 @@ const EmployeeAppointments = () => {
       case "Failed":
         return <Cancel sx={{ color: theme.palette.error.main }} />;
       case "Late":
-        return <Schedule sx={{ color: theme.palette.error.main }} />; // Icon for "Late"
+        return <Schedule sx={{ color: theme.palette.error.main }} />;
       default:
         return null;
     }
@@ -146,9 +181,11 @@ const EmployeeAppointments = () => {
                             Status: {appointment.Status || "N/A"}
                           </Typography>
                         </Box>
-                        <Button variant="outlined" sx={{ mt: 2 }}>
-                          View Doctor Profile
-                        </Button>
+                        {appointment.Status !== "Completed" && (
+                          <Button variant="outlined" sx={{ mt: 2 }} onClick={() => handleOpenRescheduleDialog(appointment)}>
+                            Reschedule
+                          </Button>
+                        )}
                       </CardContent>
                     </Card>
                   </Grid>
@@ -165,6 +202,7 @@ const EmployeeAppointments = () => {
                       <TableCell>Date</TableCell>
                       <TableCell>Time</TableCell>
                       <TableCell>Status</TableCell>
+                      {selectedTab !== "Completed" && <TableCell>Actions</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -186,6 +224,13 @@ const EmployeeAppointments = () => {
                             {appointment.Status}
                           </Box>
                         </TableCell>
+                        {selectedTab !== "Completed" && (
+                          <TableCell>
+                            <Button variant="outlined" onClick={() => handleOpenRescheduleDialog(appointment)}>
+                              Reschedule
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -195,6 +240,12 @@ const EmployeeAppointments = () => {
           )}
         </>
       )}
+      <RescheduleDialog
+        open={rescheduleDialogOpen}
+        onClose={handleCloseRescheduleDialog}
+        appointment={selectedAppointment}
+        onSave={handleSaveReschedule}
+      />
     </Box>
   );
 };

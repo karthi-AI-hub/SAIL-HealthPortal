@@ -141,51 +141,55 @@ const EmployeeProfile = () => {
     </Card>
   );
 
-  const renderEmployeeData = () => (
-    <Card
-      component={motion.div}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      sx={{
-        p: 3,
-        borderRadius: "8px",
-        boxShadow: 1,
-        mb: 3,
-        backgroundColor: "background.paper",
-      }}
-    >
-      <CardContent>
-        <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
-          <Person sx={{ verticalAlign: "middle", mr: 1 }} />
-          Personal Details
-        </Typography>
-        <TableContainer component={Paper} elevation={0}>
-          <Table>
-            <TableBody>
-              {Object.entries(employeeData || {}).map(([key, value]) => (
-                <TableRow key={key}>
-                  <TableCell>
-                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
-                      {key.replace(/_/g, " ")}:
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body1" color="textSecondary">
-                      {value || "N/A"}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </CardContent>
-    </Card>
-  );
+  const renderEmployeeData = () => {
+    const orderedKeys = ["Name", "EmployeeId", "Email", "Phone", "Address"]; // Define the desired order of keys
+    return (
+      <Card
+        component={motion.div}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        sx={{
+          p: 3,
+          borderRadius: "8px",
+          boxShadow: 1,
+          mb: 3,
+          backgroundColor: "background.paper",
+        }}
+      >
+        <CardContent>
+          <Typography variant="h5" fontWeight="bold" color="primary" gutterBottom>
+            <Person sx={{ verticalAlign: "middle", mr: 1 }} />
+            Personal Details
+          </Typography>
+          <TableContainer component={Paper} elevation={0}>
+            <Table>
+              <TableBody>
+                {orderedKeys.map((key) => (
+                  <TableRow key={key}>
+                    <TableCell>
+                      <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                        {key.replace(/_/g, " ")}:
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body1" color="textSecondary">
+                        {employeeData[key] || "N/A"}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderFamilyData = () => {
     const member = familyData.find((member) => member.id === selectedTab);
+    const orderedKeys = ["Name", "Relation", "Age", "Email", "Phone", "Address"]; // Define the desired order of keys for family members
     return member ? (
       <Card
         component={motion.div}
@@ -208,23 +212,20 @@ const EmployeeProfile = () => {
           <TableContainer component={Paper} elevation={0}>
             <Table>
               <TableBody>
-                {Object.entries(member).map(
-                  ([key, value]) =>
-                    key !== "id" && (
-                      <TableRow key={key}>
-                        <TableCell>
-                          <Typography variant="subtitle1" fontWeight="bold" color="textSecondary">
-                            {key.replace(/_/g, " ")}:
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body1" color="primary">
-                            {value || "N/A"}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )
-                )}
+                {orderedKeys.map((key) => (
+                  <TableRow key={key}>
+                    <TableCell>
+                      <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                        {key.replace(/_/g, " ")}:
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body1" color="textSecondary">
+                        {member[key] || "N/A"}
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>
