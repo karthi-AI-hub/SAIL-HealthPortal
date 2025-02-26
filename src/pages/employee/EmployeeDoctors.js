@@ -146,7 +146,7 @@ const EmployeeDoctors = () => {
           </Typography>
           <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
             <Chip icon={<Email />} label={selectedDoctor?.Email || "N/A"} variant="outlined" />
-            <Chip icon={<Phone />} label={selectedDoctor?.ContactInfo || "N/A"} variant="outlined" />
+            <Chip icon={<Phone />} label={selectedDoctor?.Phone || "N/A"} variant="outlined" />
             <Chip
               icon={<Schedule />}
               label={selectedDoctor?.Availability || "N/A"}
@@ -289,7 +289,7 @@ const EmployeeDoctors = () => {
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>
                             <Phone fontSize="small" />
                             <Typography variant="body2" color="text.secondary">
-                              {doctor.ContactInfo || "N/A"}
+                              {doctor.Phone || "N/A"}
                             </Typography>
                           </Box>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1 }}>

@@ -179,6 +179,22 @@ const EmployeeProfile = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+                {Object.keys(employeeData)
+                  .filter((key) => !orderedKeys.includes(key))
+                  .map((key) => (
+                    <TableRow key={key}>
+                      <TableCell>
+                        <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                          {key.replace(/_/g, " ")}:
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body1" color="textSecondary">
+                          {employeeData[key] || "N/A"}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </TableContainer>
@@ -226,6 +242,22 @@ const EmployeeProfile = () => {
                     </TableCell>
                   </TableRow>
                 ))}
+                {Object.keys(member)
+                  .filter((key) => !orderedKeys.includes(key) && key !== "id")
+                  .map((key) => (
+                    <TableRow key={key}>
+                      <TableCell>
+                        <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                          {key.replace(/_/g, " ")}:
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body1" color="textSecondary">
+                          {member[key] || "N/A"}
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </TableContainer>

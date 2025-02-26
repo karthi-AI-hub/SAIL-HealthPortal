@@ -240,15 +240,9 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
             {Object.keys(formData).filter(key => !orderedKeys.includes(key)).map((key, index) => (
               <TableRow key={index}>
                 <TableCell>
-                  <TextField
-                    name={key}
-                    value={key}
-                    onChange={handleInputChange}
-                    fullWidth
-                    variant="outlined"
-                    size="small"
-                    placeholder="Key"
-                  />
+                  <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                    {key.replace(/_/g, " ")}:
+                  </Typography>
                 </TableCell>
                 <TableCell>
                   <TextField
@@ -258,7 +252,6 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    placeholder="Value"
                   />
                 </TableCell>
               </TableRow>
@@ -278,6 +271,25 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
           <TableBody>
             {orderedKeys.map((key) => (
               <TableRow key={key}>
+                <TableCell>
+                  <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                    {key.replace(/_/g, " ")}:
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <TextField
+                    name={key}
+                    value={formData[key] || ""}
+                    onChange={handleInputChange}
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                  />
+                </TableCell>
+              </TableRow>
+            ))}
+            {Object.keys(formData).filter(key => !orderedKeys.includes(key)).map((key, index) => (
+              <TableRow key={index}>
                 <TableCell>
                   <Typography variant="subtitle1" fontWeight="bold" color="primary">
                     {key.replace(/_/g, " ")}:
