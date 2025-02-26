@@ -21,8 +21,8 @@ import {
   Button,
 } from "@mui/material";
 import { useEmployee } from "../../context/EmployeeContext";
-import { CheckCircle, Pending, Cancel, Schedule } from "@mui/icons-material"; // Icons for appointment status
-import RescheduleDialog from "./../../components/ReScheduleAppointment"; // Import the dialog component
+import { CheckCircle, Pending, Cancel, Schedule } from "@mui/icons-material";
+import RescheduleDialog from "./../../components/ReScheduleAppointment";
 
 const EmployeeAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -53,13 +53,6 @@ const EmployeeAppointments = () => {
           const doctorRef = doc(db, "Doctors", appointment.DoctorId);
           const doctorSnap = await getDoc(doctorRef);
           const doctorData = doctorSnap.exists() ? doctorSnap.data() : null;
-
-          const appointmentDateTime = new Date(`${appointment.Date} ${appointment.Time}`);
-          const now = new Date();
-          if (appointment.Status === "Upcoming" && appointmentDateTime < now) {
-            appointment.Status = "Late";
-            await updateDoc(doc(db, "Appointments", appointment.id), { Status: "Late" });
-          }
 
           return { ...appointment, doctor: doctorData };
         })
@@ -223,6 +216,11 @@ const EmployeeAppointments = () => {
                             {getStatusIcon(appointment.Status)}
                             {appointment.Status}
                           </Box>
+                          {appointment.Status === "Failed" && appointment.DeclineReason && (
+                            <Typography variant="body2" color="error" sx={{ mt: 1 }}>
+                              Reason: {appointment.DeclineReason}
+                            </Typography>
+                          )}
                         </TableCell>
                         {selectedTab !== "Completed" && (
                           <TableCell>

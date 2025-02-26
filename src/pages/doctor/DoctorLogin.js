@@ -6,6 +6,7 @@ import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "fir
 import { doc, updateDoc, query, where, collection, getDocs, serverTimestamp } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useDoctor } from "../../context/DoctorContext";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const DoctorLogin = () => {
   const [email, setEmail] = useState("");
@@ -16,53 +17,92 @@ const DoctorLogin = () => {
   const [resetMessage, setResetMessage] = useState("");
   const [showReset, setShowReset] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
   const navigate = useNavigate();
 
   const auth = getAuth();
   const { setDoctorId } = useDoctor();
-  
+
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    console.log("Login started");
+
+    if (!recaptchaToken) {
+      setError("Please complete the reCAPTCHA");
+      setLoading(false);
+      return;
+    }
+
+    console.log("reCAPTCHA token obtained");
+
+    // Verify the reCAPTCHA token with your server
+    const startTime = performance.now();
+    const response = await fetch('https://sail-backend.onrender.com/api/verify-recaptcha', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token: recaptchaToken }),
+    });
+    const endTime = performance.now();
+    console.log(`reCAPTCHA verification took ${endTime - startTime} ms`);
+
+    const data = await response.json();
+
+    if (!data.success) {
+      setError("reCAPTCHA verification failed");
+      setLoading(false);
+      return;
+    }
+
+    console.log("reCAPTCHA verified");
+
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
 
       const q = query(collection(db, "Doctors"), where("Email", "==", user.email));
       const querySnapshot = await getDocs(q);
 
-      let docID = null;
-      if (!querySnapshot.empty) {
-        const docDoc = querySnapshot.docs[0];
-        docID = docDoc.id;
-      } else {
+      if (querySnapshot.empty) {
         setError("❌ Doctor not found in records.");
         setLoading(false);
         return;
       }
 
+      const doctorDoc = querySnapshot.docs[0];
+      const docID = doctorDoc.id;
+
       setDoctorId(docID);
       localStorage.setItem("workerId", docID);
 
-      const userRef = doc(db, "Doctors", docID);
-      await updateDoc(userRef, {
-        LastLogin: serverTimestamp(),
-      });
-
+      await updateDoc(doc(db, "Doctors", docID), { LastLogin: serverTimestamp() });
+      setLoading(false);
       navigate("/doctor/dashboard");
+
+      console.log("Login successful");
     } catch (err) {
-      setError("Invalid Email or Password. Try again later.");
-      console.error(err.message);
+      let errorMessage = "❌ Login failed. Please check your credentials.";
+      if (err.code === "auth/invalid-email") errorMessage = "❌ Invalid email format.";
+      if (err.code === "auth/user-not-found") errorMessage = "❌ No account found with this email.";
+      if (err.code === "auth/wrong-password") errorMessage = "❌ Incorrect password.";
+      setError(errorMessage);
+      setLoading(false);
     }
-    setLoading(false); 
   };
 
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setResetMessage("");
     try {
-      await sendPasswordResetEmail(auth, resetEmail);
+      await sendPasswordResetEmail(auth, resetEmail.trim());
       setResetMessage("✅ Password reset email sent! Check your inbox.");
     } catch (err) {
       setResetMessage("❌ Failed to send reset email. Check your email address.");
@@ -111,6 +151,12 @@ const DoctorLogin = () => {
                   </button>
                 </div>
               </div>
+
+              <ReCAPTCHA
+                sitekey="6LflKuIqAAAAALCU8YJ-YUrHsDK8f736ClIaboIh"
+                onChange={handleRecaptchaChange}
+              />
+
               <p className="text-end">
                 <span 
                   className="text-primary" 

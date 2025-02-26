@@ -6,6 +6,7 @@ import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "fir
 import { doc, updateDoc, query, where, collection, getDocs, serverTimestamp } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEmployee } from "../../context/EmployeeContext";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const EmployeeLogin = () => {
   const [email, setEmail] = useState("");
@@ -16,14 +17,51 @@ const EmployeeLogin = () => {
   const [resetEmail, setResetEmail] = useState("");
   const [resetMessage, setResetMessage] = useState("");
   const [showReset, setShowReset] = useState(false);
+  const [recaptchaToken, setRecaptchaToken] = useState(null);
   const navigate = useNavigate();
   const auth = getAuth();
   const { setEmployeeId } = useEmployee();
+
+  const handleRecaptchaChange = (token) => {
+    setRecaptchaToken(token);
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    console.log("Login started");
+
+    if (!recaptchaToken) {
+      setError("Please complete the reCAPTCHA");
+      setLoading(false);
+      return;
+    }
+
+    console.log("reCAPTCHA token obtained");
+
+    // Verify the reCAPTCHA token with your server
+    const startTime = performance.now();
+    const response = await fetch('https://sail-backend.onrender.com/api/verify-recaptcha', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token: recaptchaToken }),
+    });
+    const endTime = performance.now();
+    console.log(`reCAPTCHA verification took ${endTime - startTime} ms`);
+
+    const data = await response.json();
+
+    if (!data.success) {
+      setError("reCAPTCHA verification failed");
+      setLoading(false);
+      return;
+    }
+
+    console.log("reCAPTCHA verified");
 
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
@@ -47,8 +85,9 @@ const EmployeeLogin = () => {
       await updateDoc(doc(db, "Employee", empID), { LastLogin: serverTimestamp() });
       setLoading(false);
       navigate("/employee/dashboard");
-   
-   } catch (err) {
+
+      console.log("Login successful");
+    } catch (err) {
       let errorMessage = "❌ Login failed. Please check your credentials.";
       if (err.code === "auth/invalid-email") errorMessage = "❌ Invalid email format.";
       if (err.code === "auth/user-not-found") errorMessage = "❌ No account found with this email.";
@@ -95,6 +134,11 @@ const EmployeeLogin = () => {
                 </button>
               </div>
             </div>
+
+            <ReCAPTCHA
+              sitekey="6LflKuIqAAAAALCU8YJ-YUrHsDK8f736ClIaboIh"
+              onChange={handleRecaptchaChange}
+            />
 
             <p className="text-end">
               <span className="text-primary" style={{ cursor: "pointer" }} onClick={() => { setShowReset(true); setError(""); }}>
