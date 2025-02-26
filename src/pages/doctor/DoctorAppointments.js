@@ -24,9 +24,9 @@ import {
   IconButton,
   Tooltip,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 import { useDoctor } from "../../context/DoctorContext";
 import { CheckCircle, Pending, Cancel, Schedule, Visibility } from "@mui/icons-material";
-import EmployeeProfileModal from "../../components/EmployeeProfileModal";
 
 const DoctorAppointments = () => {
   const [appointments, setAppointments] = useState([]);
@@ -35,11 +35,10 @@ const DoctorAppointments = () => {
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [declineReason, setDeclineReason] = useState("");
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
   const db = getFirestore();
   const { doctorId } = useDoctor();
   const theme = useTheme();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (doctorId && selectedTab) {
@@ -65,7 +64,7 @@ const DoctorAppointments = () => {
           const patientRef = doc(db, "Employee", appointment.EmployeeId);
           const patientSnap = await getDoc(patientRef);
           const patientData = patientSnap.exists() ? patientSnap.data() : null;
-          return { ...appointment, PatientName: patientData?.Name || "N/A" };
+          return { ...appointment, PatientName: patientData?.Name || "N/A", EmployeeId: appointment.EmployeeId };
         })
       );
 
@@ -114,14 +113,8 @@ const DoctorAppointments = () => {
     }
   };
 
-  const handleOpenProfileModal = (employeeId) => {
-    setSelectedEmployeeId(employeeId);
-    setProfileModalOpen(true);
-  };
-
-  const handleCloseProfileModal = () => {
-    setProfileModalOpen(false);
-    setSelectedEmployeeId(null);
+  const handleViewProfile = (employeeId) => {
+    navigate(`/doctor/patients?search=${encodeURIComponent(employeeId)}`);
   };
 
   const getStatusIcon = (status) => {
@@ -193,7 +186,7 @@ const DoctorAppointments = () => {
                     >
                       <TableCell>
                         <Tooltip title="View Profile">
-                          <IconButton onClick={() => handleOpenProfileModal(appointment.EmployeeId)}>
+                          <IconButton onClick={() => handleViewProfile(appointment.EmployeeId)}>
                             <Visibility />
                           </IconButton>
                         </Tooltip>
@@ -248,11 +241,6 @@ const DoctorAppointments = () => {
           <Button onClick={handleDeclineAppointment} color="primary">Decline</Button>
         </DialogActions>
       </Dialog>
-      <EmployeeProfileModal
-        open={profileModalOpen}
-        onClose={handleCloseProfileModal}
-        employeeId={selectedEmployeeId}
-      />
     </Box>
   );
 };

@@ -26,16 +26,15 @@ import {
   Tooltip,
 } from "@mui/material";
 import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, addDoc } from "firebase/firestore";
-import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Edit, Save, Cancel, Add } from "@mui/icons-material";
+import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Save, Cancel, Add } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
-const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
+const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   const [employeeData, setEmployeeData] = useState(null);
   const [familyData, setFamilyData] = useState([]);
   const [selectedTab, setSelectedTab] = useState("You");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({});
   const [alert, setAlert] = useState({ open: false, message: "", severity: "success" });
   const [newFieldDialogOpen, setNewFieldDialogOpen] = useState(false);
@@ -103,10 +102,6 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
     }
   };
 
-  const handleEditToggle = () => {
-    setEditMode(!editMode);
-  };
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -157,7 +152,6 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
         );
         setFamilyData(updatedFamilyData);
       }
-      setEditMode(false);
       setAlert({ open: true, message: "Data saved successfully!", severity: "success" });
     } catch (err) {
       setError("Failed to update data. Please try again later.");
@@ -231,24 +225,19 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  {editMode && key !== "Email" && key !== "EmployeeId" ? (
-                    <TextField
-                      name={key}
-                      value={formData[key] || ""}
-                      onChange={handleInputChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                    />
-                  ) : (
-                    <Typography variant="body1" color="textSecondary">
-                      {employeeData[key] || "N/A"}
-                    </Typography>
-                  )}
+                  <TextField
+                    name={key}
+                    value={formData[key] || ""}
+                    onChange={handleInputChange}
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                    disabled={key === "Email" || key === "EmployeeId"}
+                  />
                 </TableCell>
               </TableRow>
             ))}
-            {editMode && Object.keys(formData).filter(key => !orderedKeys.includes(key)).map((key, index) => (
+            {Object.keys(formData).filter(key => !orderedKeys.includes(key)).map((key, index) => (
               <TableRow key={index}>
                 <TableCell>
                   <TextField
@@ -295,20 +284,14 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  {editMode ? (
-                    <TextField
-                      name={key}
-                      value={formData[key] || ""}
-                      onChange={handleInputChange}
-                      fullWidth
-                      variant="outlined"
-                      size="small"
-                    />
-                  ) : (
-                    <Typography variant="body1" color="textSecondary">
-                      {member[key] || "N/A"}
-                    </Typography>
-                  )}
+                  <TextField
+                    name={key}
+                    value={formData[key] || ""}
+                    onChange={handleInputChange}
+                    fullWidth
+                    variant="outlined"
+                    size="small"
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -326,7 +309,7 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        Employee Profile
+        Edit Employee Profile
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -387,31 +370,22 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
         )}
       </DialogContent>
       <DialogActions>
-        {editMode ? (
-          <>
-            <Tooltip title="Add new field">
-              <IconButton onClick={handleAddField} color="primary">
-                <Add />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Add new family member">
-              <IconButton onClick={handleAddFamilyMember} color="primary">
-                <Group />
-              </IconButton>
-            </Tooltip>
-            <Button onClick={handleSave} color="primary" startIcon={<Save />}>
-              Save
-            </Button>
-            <Button onClick={handleEditToggle} color="secondary" startIcon={<Cancel />}>
-              Cancel
-            </Button>
-          </>
-        ) : (
-          <Button onClick={handleEditToggle} color="primary" startIcon={<Edit />}>
-            Edit
-          </Button>
-        )}
-        <Button onClick={onClose}>Close</Button>
+        <Tooltip title="Add new field">
+          <IconButton onClick={handleAddField} color="primary">
+            <Add />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title="Add new family member">
+          <IconButton onClick={handleAddFamilyMember} color="primary">
+            <Group />
+          </IconButton>
+        </Tooltip>
+        <Button onClick={handleSave} color="primary" startIcon={<Save />}>
+          Save
+        </Button>
+        <Button onClick={onClose} color="secondary" startIcon={<Cancel />}>
+          Cancel
+        </Button>
       </DialogActions>
       <Snackbar open={alert.open} autoHideDuration={6000} onClose={handleCloseAlert}>
         <Alert onClose={handleCloseAlert} severity={alert.severity} sx={{ width: '100%' }}>
@@ -512,4 +486,4 @@ const EmployeeProfileModal = ({ open, onClose, employeeId }) => {
   );
 };
 
-export default EmployeeProfileModal;
+export default EmployeeProfileEdit;
