@@ -1,3 +1,4 @@
+// App.js
 import React from "react";
 import { EmployeeProvider } from "./context/EmployeeContext";
 import { DoctorProvider } from "./context/DoctorContext";
@@ -9,13 +10,13 @@ import SplashScreen from "./pages/SplashScreen";
 import DoctorLayout from "./components/DoctorLayout";
 import EmployeeLayout from "./components/EmployeeLayout";
 
-import EmployeRegister from "./pages/employee//EmployeeRegister";
+import EmployeRegister from "./pages/employee/EmployeeRegister";
 import EmployeLogin from "./pages/employee/EmployeLogin";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import EmployeeTablets from "./pages/employee/EmployeeTablets";
 import EmployeeReports from "./pages/employee/EmployeeReports";
 import EmployeeDoctors from "./pages/employee/EmployeeDoctors";
-import EmployeDashboard from "./pages/employee//EmployeeDashboard";
+import EmployeDashboard from "./pages/employee/EmployeeDashboard";
 import EmployeeAppointments from "./pages/employee/EmployeeAppointments";
 
 import DoctorRegister from "./pages/doctor/DoctorRegister";

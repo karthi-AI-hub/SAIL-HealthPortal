@@ -13,12 +13,16 @@ import {
   TextField,
   InputAdornment,
   useTheme,
+  CircularProgress,
+  Alert,
 } from "@mui/material";
 import { Email, Phone, Visibility, Edit, Description, UploadFile, Search, Person } from "@mui/icons-material";
 import { useLocation } from "react-router-dom";
 import EmployeeProfileView from "../../components/EmployeeProfileView";
 import EmployeeProfileEdit from "../../components/EmployeeProfileEdit";
 import { useDoctor } from "../../context/DoctorContext";
+import ReportUploadDialog from "../../Utils/ReportUploadDialog";
+import { uploadReport } from "../../Utils/uploadReport";
 
 const DoctorPatients = () => {
   const [patients, setPatients] = useState([]);
@@ -26,7 +30,10 @@ const DoctorPatients = () => {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [profileViewOpen, setProfileViewOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [uploadMessage, setUploadMessage] = useState('');
+  const [uploadError, setUploadError] = useState('');
   const db = getFirestore();
   const { doctorId } = useDoctor();
   const theme = useTheme();
@@ -78,6 +85,40 @@ const DoctorPatients = () => {
     setSelectedPatientId(null);
   };
 
+  const handleOpenUploadDialog = (patientId) => {
+    setSelectedPatientId(patientId);
+    setUploadDialogOpen(true);
+  };
+
+  const handleCloseUploadDialog = (success, errorMessage) => {
+    setUploadDialogOpen(false);
+    setSelectedPatientId(null);
+    if (success) {
+      setUploadMessage('File uploaded successfully!');
+      setUploadError('');
+      setTimeout(() => {
+        setUploadMessage('');
+      }, 3000); // Hide the message after 3 seconds
+    } else if (errorMessage) {
+      setUploadError('Error uploading report: ' + errorMessage);
+      setUploadMessage('');
+      setTimeout(() => {
+        setUploadError('');
+      }, 3000); // Hide the message after 3 seconds
+    }
+  };
+
+  const handleUploadReport = async (fileNameWithExtension, file) => {
+    const fileExtension = file.name.split('.').pop(); // Get the file extension
+    const fileName = `${fileNameWithExtension}.${fileExtension}`; // Append the file extension here
+    try {
+      await uploadReport(file, selectedPatientId, fileName);
+      handleCloseUploadDialog(true);
+    } catch (error) {
+      handleCloseUploadDialog(false, error.message);
+    }
+  };
+
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
@@ -121,26 +162,9 @@ const DoctorPatients = () => {
       </Box>
 
       {loading ? (
-        <Grid container spacing={3}>
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Grid item xs={12} sm={6} md={4} key={index}>
-              <Card sx={{ height: "100%", display: "flex", flexDirection: "column", borderRadius: 2 }}>
-                <CardContent sx={{ flex: 1 }}>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                    <Skeleton variant="circular" width={56} height={56} sx={{ mr: 2 }} />
-                    <Box sx={{ flex: 1 }}>
-                      <Skeleton variant="text" width="60%" height={30} />
-                      <Skeleton variant="text" width="40%" height={20} />
-                    </Box>
-                  </Box>
-                  <Skeleton variant="text" width="50%" height={20} />
-                  <Skeleton variant="text" width="50%" height={20} />
-                  <Skeleton variant="text" width="50%" height={20} />
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+          <CircularProgress />
+        </Box>
       ) : (
         <>
           {filteredPatients.length === 0 ? (
@@ -229,7 +253,7 @@ const DoctorPatients = () => {
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Upload Reports">
-                          <IconButton sx={{ color: theme.palette.success.main }}>
+                          <IconButton onClick={() => handleOpenUploadDialog(patient.id)} sx={{ color: theme.palette.success.main }}>
                             <UploadFile />
                           </IconButton>
                         </Tooltip>
@@ -257,6 +281,21 @@ const DoctorPatients = () => {
         onClose={handleCloseProfileEdit}
         employeeId={selectedPatientId}
       />
+      <ReportUploadDialog
+        open={uploadDialogOpen}
+        onClose={handleCloseUploadDialog}
+        onUpload={handleUploadReport}
+      />
+      {uploadMessage && (
+        <Alert severity="success" sx={{ mt: 2 }}>
+          {uploadMessage}
+        </Alert>
+      )}
+      {uploadError && (
+        <Alert severity="error" sx={{ mt: 2 }}>
+          {uploadError}
+        </Alert>
+      )}
     </Box>
   );
 };
