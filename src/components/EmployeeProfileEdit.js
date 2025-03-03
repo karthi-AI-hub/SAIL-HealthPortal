@@ -25,7 +25,7 @@ import {
   Alert,
   Tooltip,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, addDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, setDoc } from "firebase/firestore";
 import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Save, Cancel, Add } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
@@ -127,7 +127,20 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   const handleSaveFamilyMember = async () => {
     try {
       const familyRef = collection(db, "Employee", employeeId, "Family");
-      await addDoc(familyRef, newFamilyMemberData);
+      let relationCount = 1;
+      let newMemberId = `${employeeId}_${newFamilyMemberData.Relation}`;
+
+      while (true) {
+        const docRef = doc(familyRef, newMemberId);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          break;
+        }
+        relationCount++;
+        newMemberId = `${employeeId}_${newFamilyMemberData.Relation}${relationCount}`;
+      }
+
+      await setDoc(doc(familyRef, newMemberId), newFamilyMemberData);
       fetchFamilyData();
       setNewFamilyMemberDialogOpen(false);
       setNewFamilyMemberData({ Name: "", Relation: "", Age: "", Email: "", Phone: "", Address: "" });

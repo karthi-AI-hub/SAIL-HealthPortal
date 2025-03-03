@@ -1,6 +1,3 @@
-//import { supabase } from './supabaseClient';
-//import { getAuth } from 'firebase/auth';
-
 export const uploadReport = async (file, patientId, fileName) => {
   const formData = new FormData();
   formData.append('file', file);

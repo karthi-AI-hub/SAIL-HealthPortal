@@ -1,18 +1,17 @@
-import { supabase } from './supabaseClient';
-
 export const getReports = async (patientId) => {
-  const { data, error } = await supabase.storage.from('reports').list(patientId);
+  const response = await fetch('https://sail-backend.onrender.com/get-reports', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ patientId }),
+  });
 
-  if (error) {
-    throw new Error(error.message);
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to fetch reports');
   }
 
-  const reportUrls = await Promise.all(
-    data.map(async (file) => {
-      const { signedURL } = await supabase.storage.from('reports').createSignedUrl(`${patientId}/${file.name}`, 60);
-      return { name: file.name, url: signedURL };
-    })
-  );
-
-  return reportUrls;
+  const data = await response.json();
+  return data;
 };

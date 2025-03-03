@@ -7,7 +7,6 @@ import {
   CardContent,
   Grid,
   Avatar,
-  Skeleton,
   IconButton,
   Tooltip,
   TextField,
@@ -16,8 +15,8 @@ import {
   CircularProgress,
   Alert,
 } from "@mui/material";
-import { Email, Phone, Visibility, Edit, Description, UploadFile, Search, Person } from "@mui/icons-material";
-import { useLocation } from "react-router-dom";
+import { Email, Phone, Visibility, Edit, Description, Search, Person } from "@mui/icons-material";
+import { useLocation, useNavigate } from "react-router-dom";
 import EmployeeProfileView from "../../components/EmployeeProfileView";
 import EmployeeProfileEdit from "../../components/EmployeeProfileEdit";
 import { useDoctor } from "../../context/DoctorContext";
@@ -38,6 +37,7 @@ const DoctorPatients = () => {
   const { doctorId } = useDoctor();
   const theme = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchPatients();
@@ -85,11 +85,6 @@ const DoctorPatients = () => {
     setSelectedPatientId(null);
   };
 
-  const handleOpenUploadDialog = (patientId) => {
-    setSelectedPatientId(patientId);
-    setUploadDialogOpen(true);
-  };
-
   const handleCloseUploadDialog = (success, errorMessage) => {
     setUploadDialogOpen(false);
     setSelectedPatientId(null);
@@ -98,19 +93,19 @@ const DoctorPatients = () => {
       setUploadError('');
       setTimeout(() => {
         setUploadMessage('');
-      }, 3000); // Hide the message after 3 seconds
+      }, 3000);
     } else if (errorMessage) {
       setUploadError('Error uploading report: ' + errorMessage);
       setUploadMessage('');
       setTimeout(() => {
         setUploadError('');
-      }, 3000); // Hide the message after 3 seconds
+      }, 3000); 
     }
   };
 
   const handleUploadReport = async (fileNameWithExtension, file) => {
-    const fileExtension = file.name.split('.').pop(); // Get the file extension
-    const fileName = `${fileNameWithExtension}.${fileExtension}`; // Append the file extension here
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${fileNameWithExtension}.${fileExtension}`;
     try {
       await uploadReport(file, selectedPatientId, fileName);
       handleCloseUploadDialog(true);
@@ -121,6 +116,10 @@ const DoctorPatients = () => {
 
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
+  };
+
+  const handleViewReports = (patientId) => {
+    navigate(`/doctor/reports?patientId=${patientId}`);
   };
 
   const filteredPatients = patients.filter((patient) => {
@@ -248,13 +247,8 @@ const DoctorPatients = () => {
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="View Reports">
-                          <IconButton sx={{ color: theme.palette.warning.main }}>
+                          <IconButton onClick={() => handleViewReports(patient.id)} sx={{ color: theme.palette.warning.main }}>
                             <Description />
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="Upload Reports">
-                          <IconButton onClick={() => handleOpenUploadDialog(patient.id)} sx={{ color: theme.palette.success.main }}>
-                            <UploadFile />
                           </IconButton>
                         </Tooltip>
                       </Box>
@@ -284,6 +278,7 @@ const DoctorPatients = () => {
       <ReportUploadDialog
         open={uploadDialogOpen}
         onClose={handleCloseUploadDialog}
+        patientId={selectedPatientId}
         onUpload={handleUploadReport}
       />
       {uploadMessage && (

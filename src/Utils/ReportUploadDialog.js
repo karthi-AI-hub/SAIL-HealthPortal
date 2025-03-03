@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography, CircularProgress } from '@mui/material';
+import React, { useState } from "react";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography, CircularProgress } from "@mui/material";
 
-const ReportUploadDialog = ({ open, onClose, onUpload }) => {
-  const [reportName, setReportName] = useState('');
+const ReportUploadDialog = ({ open, onClose, patientId }) => {
+  const [reportName, setReportName] = useState("");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -13,15 +13,30 @@ const ReportUploadDialog = ({ open, onClose, onUpload }) => {
   const handleUpload = async () => {
     if (reportName && file) {
       setLoading(true);
-      const currentDate = new Date().toLocaleDateString().replace(/\//g, '-');
-      const fileNameWithExtension = `${reportName}_${currentDate}`; // Remove the file extension here
       try {
-        await onUpload(fileNameWithExtension, file);
-        setLoading(false);
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("patientId", patientId);
+        formData.append("fileName", reportName);
+
+        const response = await fetch("https://sail-backend.onrender.com/upload-report", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to upload file");
+        }
+
+        const data = await response.json();
+        alert("File uploaded successfully!");
         onClose(true); 
       } catch (error) {
+        alert("Error uploading file: " + error.message);
+        onClose(false, error.message); 
+      } finally {
         setLoading(false);
-        onClose(false, error.message);
       }
     }
   };
