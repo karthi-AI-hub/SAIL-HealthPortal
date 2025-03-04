@@ -61,7 +61,6 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
         const data = docSnap.data();
         delete data.LastLogin;
         delete data.CreatedAt;
-        delete data.Pass;
         setEmployeeData(data);
         setFormData(data);
       } else {
@@ -143,7 +142,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
       await setDoc(doc(familyRef, newMemberId), newFamilyMemberData);
       fetchFamilyData();
       setNewFamilyMemberDialogOpen(false);
-      setNewFamilyMemberData({ Name: "", Relation: "", Age: "", Email: "", Phone: "", Address: "" });
+      setNewFamilyMemberData({ Name: "", Relation: "", Age: "", Email: "", Phone: "" });
       setAlert({ open: true, message: "Family member added successfully!", severity: "success" });
     } catch (err) {
       setError("Failed to add family member. Please try again later.");
@@ -214,7 +213,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
         {employeeData?.Name || "N/A"}
       </Typography>
       <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-        {employeeData?.EmployeeId || "N/A"}
+        {employeeData?.EmployeeID || "N/A"}
       </Typography>
       <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
         <Chip icon={<Email />} label={employeeData?.Email || "N/A"} variant="outlined" />
@@ -225,7 +224,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   );
 
   const renderEmployeeData = () => {
-    const orderedKeys = ["Name", "EmployeeId", "Email", "Phone", "Address"];
+    const orderedKeys = ["Name", "EmployeeID", "Email", "Phone", "Address"];
     return (
       <TableContainer component={Paper} elevation={0}>
         <Table>
@@ -245,7 +244,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    disabled={key === "Email" || key === "EmployeeId"}
+                    disabled={key === "Email" || key === "EmployeeID"}
                   />
                 </TableCell>
               </TableRow>
@@ -277,7 +276,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
 
   const renderFamilyData = () => {
     const member = familyData.find((member) => member.id === selectedTab);
-    const orderedKeys = ["Name", "Relation", "Age", "Email", "Phone", "Address"];
+    const orderedKeys = ["Name", "Relation", "Age", "Email", "Phone"];
     return member ? (
       <TableContainer component={Paper} elevation={0} sx={{ mt: 2 }}>
         <Table>
@@ -301,7 +300,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
                 </TableCell>
               </TableRow>
             ))}
-            {Object.keys(formData).filter(key => !orderedKeys.includes(key)).map((key, index) => (
+            {Object.keys(formData).filter(key => !orderedKeys.includes(key) && key !== "id").map((key, index) => (
               <TableRow key={index}>
                 <TableCell>
                   <Typography variant="subtitle1" fontWeight="bold" color="primary">
@@ -369,7 +368,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
                 label={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Person sx={{ mr: 1 }} />
-                    You
+                    Employee
                   </Box>
                 }
                 value="You"
@@ -489,15 +488,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
             variant="outlined"
             margin="normal"
           />
-          <TextField
-            label="Address"
-            value={newFamilyMemberData.Address}
-            onChange={(e) => setNewFamilyMemberData({ ...newFamilyMemberData, Address: e.target.value })}
-            fullWidth
-            variant="outlined"
-            margin="normal"
-          />
-        </DialogContent>
+                  </DialogContent>
         <DialogActions>
           <Button onClick={() => setNewFamilyMemberDialogOpen(false)} color="secondary">
             Cancel

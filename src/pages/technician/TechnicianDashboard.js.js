@@ -13,63 +13,64 @@ import {
   Menu,
   MenuItem,
   Button,
-  Tabs,
-  Tab,
   Divider,
   Paper,
   Snackbar,
-  Fab,
+  Tabs,
+  Tab,
+  Chip,
 } from "@mui/material";
-import { Search, MoreVert, FileDownload, Share, Delete, Person, Group, UploadFile } from "@mui/icons-material";
+import {
+  Search,
+  MoreVert,
+  FileDownload,
+  Share,
+  Person,
+  Group,
+  Upload,
+} from "@mui/icons-material";
 import { getReports } from "../../Utils/getReports";
 import { useLocation } from "react-router-dom";
-import { getFirestore, collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { saveAs } from "file-saver";
-import ReportUploadDialog from "../../Utils/ReportUploadDialog";
 import { motion } from "framer-motion";
+import ReportUploadDialog from "../../Utils/ReportUploadDialog";
 
-const DoctorReports = () => {
+const TechnicianDashboard = () => {
   const [patientId, setPatientId] = useState("");
   const [reports, setReports] = useState([]);
+  const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [anchorEl, setAnchorEl] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [familyData, setFamilyData] = useState([]);
   const [selectedTab, setSelectedTab] = useState("You");
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [reportTypeTab, setReportTypeTab] = useState("all");
   const [patientExists, setPatientExists] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const location = useLocation();
-  const db = getFirestore();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const patientIdFromUrl = params.get("patientId");
-    if (patientIdFromUrl) {
-      setPatientId(patientIdFromUrl);
-      handleSearch(patientIdFromUrl);
-    }
-  }, [location.search]);
 
   const checkPatientExists = async (patientId) => {
-    const patientDoc = doc(db, "Employee", patientId);
-    const patientSnapshot = await getDoc(patientDoc);
-    return patientSnapshot.exists();
+    try {
+      const response = await fetch(`https://sail-backend.onrender.com/get-patient?patientId=${patientId}`);
+      const data = await response.json();
+      return data.exists;
+    } catch (err) {
+      console.error("Error checking patient existence:", err);
+      throw err;
+    }
   };
 
   const fetchFamilyData = async (patientId) => {
     try {
-      const familyRef = collection(db, "Employee", patientId, "Family");
-      const familySnapshot = await getDocs(familyRef);
-      const familyList = familySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setFamilyData(familyList);
+      const response = await fetch(`https://sail-backend.onrender.com/get-family?patientId=${patientId}`);
+      const data = await response.json();
+      setFamilyData(data.family);
     } catch (err) {
-      setError("Failed to fetch family data. Please try again later.");
+      console.error("Error fetching family data:", err);
+      setError("Failed to fetch family data.");
     }
   };
 
@@ -84,9 +85,12 @@ const DoctorReports = () => {
     try {
       const data = await getReports(patientId);
       setReports(data);
+      setFilteredReports(data);
     } catch (err) {
+      console.error("Error fetching reports:", err);
       setError("Error fetching reports: " + err.message);
       setReports([]);
+      setFilteredReports([]);
     } finally {
       setLoading(false);
     }
@@ -112,8 +116,10 @@ const DoctorReports = () => {
         setError("Patient ID does not exist.");
         setFamilyData([]);
         setReports([]);
+        setFilteredReports([]);
       }
     } catch (err) {
+      console.error("Error during search:", err);
       setError("An error occurred. Please try again later.");
     } finally {
       setLoading(false);
@@ -145,7 +151,7 @@ const DoctorReports = () => {
   const handleDownload = async () => {
     try {
       const isExpired = new Date() > new Date(selectedReport.expiryTime);
-  
+
       if (isExpired) {
         const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
           method: "POST",
@@ -154,20 +160,21 @@ const DoctorReports = () => {
           },
           body: JSON.stringify({ filePath: `${selectedReport.patientId}/${selectedReport.name}` }),
         });
-  
+
         if (!response.ok) {
           throw new Error("Failed to regenerate signed URL");
         }
-  
+
         const { signedUrl } = await response.json();
         selectedReport.url = signedUrl;
-        selectedReport.expiryTime = new Date(Date.now() + 3600 * 1000).toISOString(); // Update expiry time
+        selectedReport.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
       }
-  
+
       saveAs(selectedReport.url, selectedReport.name);
       setSnackbarMessage("Report downloaded successfully!");
       setSnackbarOpen(true);
     } catch (error) {
+      console.error("Error downloading file:", error);
       setSnackbarMessage("Error downloading file: " + error.message);
       setSnackbarOpen(true);
     }
@@ -177,25 +184,25 @@ const DoctorReports = () => {
   const handleShare = async () => {
     try {
       const isExpired = new Date() > new Date(selectedReport.expiryTime);
-  
+
       if (isExpired) {
-        const response = await fetch("https://sail-backend.onrender.com//regenerate-signed-url", {
+        const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ filePath: `${selectedReport.patientId}/${selectedReport.name}` }),
         });
-  
+
         if (!response.ok) {
           throw new Error("Failed to regenerate signed URL");
         }
-  
+
         const { signedUrl } = await response.json();
         selectedReport.url = signedUrl;
-        selectedReport.expiryTime = new Date(Date.now() + 3600 * 1000).toISOString(); 
+        selectedReport.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
       }
-  
+
       navigator.clipboard
         .writeText(selectedReport.url)
         .then(() => {
@@ -203,35 +210,13 @@ const DoctorReports = () => {
           setSnackbarOpen(true);
         })
         .catch((err) => {
+          console.error("Failed to copy URL:", err);
           setSnackbarMessage("Failed to copy URL: " + err.message);
           setSnackbarOpen(true);
         });
     } catch (error) {
+      console.error("Error sharing file:", error);
       setSnackbarMessage("Error sharing file: " + error.message);
-      setSnackbarOpen(true);
-    }
-    handleMenuClose();
-  }; 
-
-  const handleDelete = async () => {
-    try {
-      const response = await fetch("https://sail-backend.onrender.com/delete-report", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ filePath: `${selectedReport.patientId}/${selectedReport.name}` }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete report");
-      }
-
-      setReports(reports.filter((report) => report.name !== selectedReport.name));
-      setSnackbarMessage("Report deleted successfully!");
-      setSnackbarOpen(true);
-    } catch (error) {
-      setSnackbarMessage("Error deleting file: " + error.message);
       setSnackbarOpen(true);
     }
     handleMenuClose();
@@ -242,50 +227,34 @@ const DoctorReports = () => {
     fetchReports(newValue === "You" ? patientId : newValue);
   };
 
-  const handleOpenUploadDialog = () => {
-    if (patientExists) {
-      setUploadDialogOpen(true);
+  const handleReportTypeTabChange = (event, newValue) => {
+    setReportTypeTab(newValue);
+    if (newValue === "all") {
+      setFilteredReports(reports);
     } else {
-      setSnackbarMessage("Patient ID does not exist. Cannot upload report.");
+      setFilteredReports(reports.filter((report) => report.department === newValue));
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
+
+  const handleUploadDialogClose = (success, errorMessage) => {
+    setUploadDialogOpen(false);
+    if (success) {
+      fetchReports(patientId);
+      setSnackbarMessage("Report uploaded successfully!");
+      setSnackbarOpen(true);
+    } else if (errorMessage) {
+      setSnackbarMessage("Error uploading file: " + errorMessage);
       setSnackbarOpen(true);
     }
   };
 
-  const handleCloseUploadDialog = () => {
-    setUploadDialogOpen(false);
-  };
-
-  const handleUploadSuccess = () => {
-    fetchReports(patientId);
-    setSnackbarMessage("Report uploaded successfully!");
-    setSnackbarOpen(true);
-  };
-
-    const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-  };
-
   return (
     <Box sx={{ p: 4 }}>
-            <Box
-        sx={{
-          background: "linear-gradient(to right, #6a11cb, #2575fc)",
-          color: "white",
-          p: 4,
-          borderRadius: 2,
-          mb: 4,
-          textAlign: "center",
-        }}
-      >
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Patients Reports
-        </Typography>
-        <Typography variant="subtitle1">
-          Manage and view reports for your Patients and their family members.
-        </Typography>
-      </Box>
-
-            <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
         <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
           <TextField
             variant="outlined"
@@ -316,10 +285,19 @@ const DoctorReports = () => {
           >
             Search
           </Button>
+          <Button
+            variant="contained"
+            onClick={() => setUploadDialogOpen(true)}
+            disabled={!patientId || loading}
+            startIcon={<Upload />}
+            sx={{ height: 56 }}
+          >
+            Upload Report
+          </Button>
         </Box>
       </Paper>
 
-            {loading && (
+      {loading && (
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", my: 4 }}>
           <CircularProgress />
         </Box>
@@ -331,7 +309,7 @@ const DoctorReports = () => {
         </Alert>
       )}
 
-            {patientExists && (
+      {patientExists && (
         <>
           <Tabs
             value={selectedTab}
@@ -368,15 +346,33 @@ const DoctorReports = () => {
           </Tabs>
           <Divider sx={{ my: 2 }} />
 
-                    {reports.length === 0 ? (
+          <Tabs
+            value={reportTypeTab}
+            onChange={handleReportTypeTabChange}
+            variant="scrollable"
+            scrollButtons
+            allowScrollButtonsMobile
+            sx={{ mb: 2 }}
+          >
+            <Tab label="All" value="all" />
+            <Tab label="Blood" value="BLOOD" />
+            <Tab label="Sugar" value="SUGAR" />
+            <Tab label="Bp" value="BP" />
+            <Tab label="ECG" value="ECG" />
+            <Tab label="SCAN" value="SCAN" />
+            <Tab label="X-ray" value="X-RAY" />
+            <Tab label="Other" value="other" />
+          </Tabs>
+
+          {filteredReports.length === 0 ? (
             <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
               <Typography variant="h6" color="textSecondary">
-                No reports found for the provided Patient ID.
+                No reports found for the selected category.
               </Typography>
             </Box>
           ) : (
             <Grid container spacing={3}>
-              {reports.map((report) => (
+              {filteredReports.map((report) => (
                 <Grid item xs={12} sm={6} md={4} key={report.name}>
                   <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
                     <Card
@@ -401,21 +397,21 @@ const DoctorReports = () => {
                                 e.preventDefault();
                                 const isExpired = new Date() > new Date(report.expiryTime);
                                 if (isExpired) {
-                                  const response = await fetch("http://localhost:3001/regenerate-signed-url", {
+                                  const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
                                     method: "POST",
                                     headers: {
                                       "Content-Type": "application/json",
                                     },
                                     body: JSON.stringify({ filePath: `${report.patientId}/${report.name}` }),
                                   });
-                      
+
                                   if (!response.ok) {
                                     throw new Error("Failed to regenerate signed URL");
                                   }
-                      
+
                                   const { signedUrl } = await response.json();
                                   report.url = signedUrl;
-                                  report.expiryTime = new Date(Date.now() + 3600 * 1000).toISOString(); // Update expiry time
+                                  report.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
                                 }
                                 window.open(report.url, "_blank");
                               }}
@@ -428,6 +424,7 @@ const DoctorReports = () => {
                             <Typography variant="body2" color="textSecondary">
                               Uploaded: {report.uploadDate}
                             </Typography>
+                            <Chip label={report.reportType} size="small" sx={{ mt: 1 }} />
                           </Box>
                           <IconButton onClick={(event) => handleMenuOpen(event, report)}>
                             <MoreVert />
@@ -443,17 +440,6 @@ const DoctorReports = () => {
         </>
       )}
 
-      {/* Floating Action Button for Upload */}
-      <Fab
-        color="primary"
-        aria-label="upload"
-        onClick={handleOpenUploadDialog}
-        sx={{ position: "fixed", bottom: 16, right: 16 }}
-      >
-        <UploadFile />
-      </Fab>
-
-      {/* Menu for Report Actions */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={handleDownload}>
           <FileDownload sx={{ mr: 1 }} /> Download
@@ -461,28 +447,23 @@ const DoctorReports = () => {
         <MenuItem onClick={handleShare}>
           <Share sx={{ mr: 1 }} /> Share
         </MenuItem>
-        <MenuItem onClick={handleDelete}>
-          <Delete sx={{ mr: 1 }} /> Delete
-        </MenuItem>
       </Menu>
 
-      {/* Upload Report Dialog */}
-      <ReportUploadDialog
-        open={uploadDialogOpen}
-        onClose={handleCloseUploadDialog}
-        patientId={selectedTab === "You" ? patientId : selectedTab}
-        onUploadSuccess={handleUploadSuccess}
-      />
-
-      {/* Snackbar for Feedback */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
         onClose={handleCloseSnackbar}
         message={snackbarMessage}
       />
+
+      <ReportUploadDialog
+        open={uploadDialogOpen}
+        onClose={handleUploadDialogClose}
+        patientId={patientId}
+        department={reportTypeTab === "all" ? "Others" : reportTypeTab}
+      />
     </Box>
   );
 };
 
-export default DoctorReports;
+export default TechnicianDashboard;

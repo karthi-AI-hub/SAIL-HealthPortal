@@ -26,13 +26,12 @@ import {
 import {
   Menu as MenuIcon,
   Home,
-  CalendarMonth,
-  LocalHospital,
+  Assignment,
   Person,
   Logout,
 } from "@mui/icons-material";
 
-const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
+const TechnicianSidebar = ({ technician, isOpen, onMenuClick, setOpen }) => {
   const navigate = useNavigate();
   const auth = getAuth();
   const [logoutDialog, setLogoutDialog] = useState(false);
@@ -42,7 +41,7 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate("/auth/doctor/login");
+      navigate("/auth/technician/login");
     } catch (error) {
       console.error("Logout Error:", error.message);
     }
@@ -53,10 +52,9 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <Home />, path: "/doctor/dashboard" },
-    { text: "Profile", icon: <Person />, path: "/doctor/profile" },
-    { text: "Patients", icon: <LocalHospital />, path: "/doctor/patients" },
-    { text: "Appointments", icon: <CalendarMonth />, path: "/doctor/appointments" },
+    { text: "Dashboard", icon: <Home />, path: "/technician/dashboard" },
+    { text: "Profile", icon: <Person />, path: "/technician/profile" },
+    { text: "Reports", icon: <Assignment />, path: "/technician/dashboard"},
   ];
 
   return (
@@ -75,23 +73,23 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
           </Box>
 
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
-            {doctor.profileImage ? (
-              <Avatar src={doctor.profileImage} sx={{ width: 40, height: 40 }} />
+            {technician.profileImage ? (
+              <Avatar src={technician.profileImage} sx={{ width: 40, height: 40 }} />
             ) : (
               <Avatar sx={{ bgcolor: "#ffffff", color: "#002147", fontWeight: "bold", width: 40, height: 40 }}>
-                {getInitials(doctor.Name)}
+                {getInitials(technician.Name)}
               </Avatar>
             )}
           </IconButton>
 
           <Menu anchorEl={anchorEl} open={profileMenuOpen} onClose={() => setAnchorEl(null)}>
             <MenuItem disabled>
-              <Typography variant="subtitle1" className="doctor-name">
-                {doctor.Name || "Loading..."}
+              <Typography variant="subtitle1" className="technician-name">
+                {technician.Name || "Loading..."}
               </Typography>
             </MenuItem>
             <Divider />
-            <MenuItem onClick={() => navigate("/doctor/profile")}>
+            <MenuItem onClick={() => navigate("/technician/profile")}>
               <ListItemIcon><Person fontSize="small" /></ListItemIcon>
               Profile
             </MenuItem>
@@ -120,15 +118,15 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
       >
         <Box>
           <Toolbar sx={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px" }}>
-            {doctor.profileImage ? (
-              <Avatar src={doctor.profileImage} sx={{ width: 60, height: 60, mb: 1 }} />
+            {technician.profileImage ? (
+              <Avatar src={technician.profileImage} sx={{ width: 60, height: 60, mb: 1 }} />
             ) : (
               <Avatar sx={{ bgcolor: "#29c8dd", color: "#", width: 60, height: 60, mb: 1 }}>
-                {getInitials(doctor.Name)}
+                {getInitials(technician.Name)}
               </Avatar>
             )}
-            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#ffffff" }}>{doctor.Name || "Loading..."}</Typography>
-            <Typography variant="body2" sx={{ color: "#B0BEC5" }}>{doctor.DoctorID || "Logging in..."}</Typography>
+            <Typography variant="h6" sx={{ fontWeight: "bold", color: "#ffffff" }}>{technician.Name || "Loading..."}</Typography>
+            <Typography variant="body2" sx={{ color: "#B0BEC5" }}>{technician.Phone || "Logging in..."}</Typography>
           </Toolbar>
 
           <Divider sx={{ bgcolor: "#FFD700", height: 2 }} />
@@ -181,4 +179,4 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
   );
 };
 
-export default DoctorSidebar;
+export default TechnicianSidebar;

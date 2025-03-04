@@ -1,17 +1,15 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeSlash, Envelope, Key, Person, PersonVcard } from "react-bootstrap-icons";
+import { Eye, EyeSlash, Envelope, Key, Person, Phone } from "react-bootstrap-icons";
 import { auth, db } from "../../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { LocalHospital} from "@mui/icons-material";
 
-const DoctorRegister = () => {
-  const [doctorName, setDoctorName] = useState("");
+const TechnicianRegister = () => {
+  const [technicianName, setTechnicianName] = useState("");
   const [email, setEmail] = useState("");
-  const [docID, setDocId] = useState("");
-  const [services, setServices] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -23,12 +21,6 @@ const DoctorRegister = () => {
     return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
   };
 
-  const checkDoctorIDExists = async (docID) => {
-    const doctorsQuery = query(collection(db, "Doctors"), where("DoctorID", "==", docID));
-    const doctorsSnapshot = await getDocs(doctorsQuery);
-    return !doctorsSnapshot.empty;
-  };
-
   const isStrongPassword = (password) => {
     return password.length >= 6;
   };
@@ -38,7 +30,7 @@ const DoctorRegister = () => {
     setError("");
     setLoading(true);
 
-    if (!doctorName || !email || !docID || !services || !password || !confirmPassword) {
+    if (!technicianName || !email || !phone || !password || !confirmPassword) {
       setError("❌ All fields are required.");
       setLoading(false);
       return;
@@ -63,27 +55,33 @@ const DoctorRegister = () => {
     }
 
     try {
-      const doctorIDExist = await checkDoctorIDExists(docID);
-      if (doctorIDExist) {
-        setError("❌ Doctor ID already registered. Try login.");
+      const emailQuery = query(collection(db, "Technicians"), where("Email", "==", email));
+      const emailSnapshot = await getDocs(emailQuery);
+      if (!emailSnapshot.empty) {
+        setError("❌ Email is already registered. Try login.");
         setLoading(false);
         return;
       }
-      
+
+      const phoneQuery = query(collection(db, "Technicians"), where("Phone", "==", phone));
+      const phoneSnapshot = await getDocs(phoneQuery);
+      if (!phoneSnapshot.empty) {
+        setError("❌ Phone number is already registered. Try login.");
+        setLoading(false);
+        return;
+      }
+
       await createUserWithEmailAndPassword(auth, email, password);
 
-      await setDoc(doc(db, "Doctors", docID), {
-        Name: doctorName,
+      await setDoc(doc(db, "Technicians", phone), {
+        Name: technicianName,
         Email: email,
-        DoctorID: docID,
-        Specialization: services,
+        Phone: phone,
         CreatedAt: serverTimestamp(),
-        Phone: null,
-        Availability: null
       });
 
       setLoading(false);
-      navigate("/auth/doctor/login");
+      navigate("/auth/technician/login");
     } catch (err) {
       let errorMessage = "❌ Registration failed. Please try again.";
       if (err.code === "auth/email-already-in-use") {
@@ -99,22 +97,21 @@ const DoctorRegister = () => {
   return (
     <div className="d-flex align-items-center justify-content-center vh-100 bg-light p-3">
       <div className="card p-4 shadow w-100" style={{ maxWidth: "450px" }}>
-        <h3 className="text-center mb-3">Doctor Registration</h3>
+        <h3 className="text-center mb-3">Technician Registration</h3>
         {error && <div className="alert alert-danger">{error}</div>}
 
         <form onSubmit={handleRegister}>
           <div className="mb-3">
-            <label htmlFor="doctorName" className="form-label">Doctor Name</label>
+            <label htmlFor="technicianName" className="form-label">Technician Name</label>
             <div className="input-group">
               <span className="input-group-text"><Person size={20} /></span>
               <input
                 type="text"
-                id="doctorName"
+                id="technicianName"
                 className="form-control"
-                value={doctorName}
-                onChange={(e) => setDoctorName(e.target.value)}
+                value={technicianName}
+                onChange={(e) => setTechnicianName(e.target.value)}
                 required
-                aria-describedby="doctorNameHelp"
               />
             </div>
           </div>
@@ -130,39 +127,21 @@ const DoctorRegister = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                aria-describedby="emailHelp"
               />
             </div>
           </div>
 
           <div className="mb-3">
-            <label htmlFor="docID" className="form-label">Doctor ID</label>
+            <label htmlFor="phone" className="form-label">Phone</label>
             <div className="input-group">
-              <span className="input-group-text"><PersonVcard size={20} /></span>
+              <span className="input-group-text"><Phone size={20} /></span>
               <input
-                type="text"
-                id="docID"
+                type="tel"
+                id="phone"
                 className="form-control"
-                value={docID}
-                onChange={(e) => setDocId(e.target.value)}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 required
-                aria-describedby="docIDHelp"
-              />
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <label htmlFor="services" className="form-label">Specialization</label>
-            <div className="input-group">
-              <span className="input-group-text"><LocalHospital size={20} /></span>
-              <input
-                type="text"
-                id="services"
-                className="form-control"
-                value={services}
-                onChange={(e) => setServices(e.target.value)}
-                required
-                aria-describedby="servicesHelp"
               />
             </div>
           </div>
@@ -178,7 +157,6 @@ const DoctorRegister = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                aria-describedby="passwordHelp"
               />
               <button
                 type="button"
@@ -202,7 +180,6 @@ const DoctorRegister = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                aria-describedby="confirmPasswordHelp"
               />
               <button
                 type="button"
@@ -225,10 +202,13 @@ const DoctorRegister = () => {
             )}
           </button>
         </form>
-        <p className="text-center mt-3">Already have an account? <Link to="/auth/doctor/login">Login</Link></p>
+
+        <p className="text-center mt-3">
+          Already have an account? <Link to="/auth/technician/login">Login</Link>
+        </p>
       </div>
     </div>
   );
 };
 
-export default DoctorRegister;
+export default TechnicianRegister;

@@ -13,15 +13,12 @@ import {
   InputAdornment,
   useTheme,
   CircularProgress,
-  Alert,
 } from "@mui/material";
 import { Email, Phone, Visibility, Edit, Description, Search, Person } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import EmployeeProfileView from "../../components/EmployeeProfileView";
 import EmployeeProfileEdit from "../../components/EmployeeProfileEdit";
 import { useDoctor } from "../../context/DoctorContext";
-import ReportUploadDialog from "../../Utils/ReportUploadDialog";
-import { uploadReport } from "../../Utils/uploadReport";
 
 const DoctorPatients = () => {
   const [patients, setPatients] = useState([]);
@@ -29,10 +26,7 @@ const DoctorPatients = () => {
   const [selectedPatientId, setSelectedPatientId] = useState(null);
   const [profileViewOpen, setProfileViewOpen] = useState(false);
   const [profileEditOpen, setProfileEditOpen] = useState(false);
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [uploadMessage, setUploadMessage] = useState('');
-  const [uploadError, setUploadError] = useState('');
   const db = getFirestore();
   const { doctorId } = useDoctor();
   const theme = useTheme();
@@ -85,50 +79,19 @@ const DoctorPatients = () => {
     setSelectedPatientId(null);
   };
 
-  const handleCloseUploadDialog = (success, errorMessage) => {
-    setUploadDialogOpen(false);
-    setSelectedPatientId(null);
-    if (success) {
-      setUploadMessage('File uploaded successfully!');
-      setUploadError('');
-      setTimeout(() => {
-        setUploadMessage('');
-      }, 3000);
-    } else if (errorMessage) {
-      setUploadError('Error uploading report: ' + errorMessage);
-      setUploadMessage('');
-      setTimeout(() => {
-        setUploadError('');
-      }, 3000); 
-    }
-  };
-
-  const handleUploadReport = async (fileNameWithExtension, file) => {
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${fileNameWithExtension}.${fileExtension}`;
-    try {
-      await uploadReport(file, selectedPatientId, fileName);
-      handleCloseUploadDialog(true);
-    } catch (error) {
-      handleCloseUploadDialog(false, error.message);
-    }
-  };
-
   const handleSearchChange = (event) => {
     setSearchQuery(event.target.value);
   };
 
   const handleViewReports = (patientId) => {
-    navigate(`/doctor/reports?patientId=${patientId}`);
+    navigate(`/doctor/dashboard?patientId=${patientId}`);
   };
 
   const filteredPatients = patients.filter((patient) => {
     const query = searchQuery.toLowerCase();
     return (
-      patient.Name?.toLowerCase().includes(query) ||
-      patient.EmployeeId?.toLowerCase().includes(query) ||
-      patient.Email?.toLowerCase().includes(query) ||
-      patient.Phone?.toLowerCase().includes(query)
+      patient.EmployeeID?.toLowerCase().includes(query)
+     
     );
   });
 
@@ -140,7 +103,7 @@ const DoctorPatients = () => {
       <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
         <TextField
           variant="outlined"
-          placeholder="Search by Name, EmployeeId, Email, or Phone"
+          placeholder="Search by Employee ID"
           value={searchQuery}
           onChange={handleSearchChange}
           InputProps={{
@@ -219,7 +182,7 @@ const DoctorPatients = () => {
                             {patient.Name || "N/A"}
                           </Typography>
                           <Typography variant="body2" color="textSecondary">
-                            {patient.EmployeeId || "N/A"}
+                            {patient.EmployeeID || "N/A"}
                           </Typography>
                         </Box>
                       </Box>
@@ -275,22 +238,7 @@ const DoctorPatients = () => {
         onClose={handleCloseProfileEdit}
         employeeId={selectedPatientId}
       />
-      <ReportUploadDialog
-        open={uploadDialogOpen}
-        onClose={handleCloseUploadDialog}
-        patientId={selectedPatientId}
-        onUpload={handleUploadReport}
-      />
-      {uploadMessage && (
-        <Alert severity="success" sx={{ mt: 2 }}>
-          {uploadMessage}
-        </Alert>
-      )}
-      {uploadError && (
-        <Alert severity="error" sx={{ mt: 2 }}>
-          {uploadError}
-        </Alert>
-      )}
+      
     </Box>
   );
 };

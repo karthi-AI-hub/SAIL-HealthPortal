@@ -2,43 +2,187 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../assets/logo.png";
+import { Person, MedicalServices, Engineering } from "@mui/icons-material"; // Material-UI icons
+import { Card, CardContent, Typography, Box, Container } from "@mui/material";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="d-flex flex-column align-items-center justify-content-center vh-100 bg-light p-3">
-      <div className="mb-4 text-center">
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        backgroundColor: "#ffffff",
+        color: "#333",
+      }}
+    >
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          flexGrow: 1,
+          py: 8,
+          px: 3,
+          textAlign: "center",
+        }}
+      >
         <img
           src={logo}
           alt="Sail Logo"
-          width={250}
-          className="img-fluid"
-          style={{ maxWidth: "100%" }}
+          style={{ width: "300px", maxWidth: "100%", height: "auto", marginBottom: "24px" }}
         />
-      </div>
 
-      <h1 className="mb-4 text-center text-primary fw-bold">
-        SAIL - Health Portal
-      </h1>
+        <Typography
+          variant="h2"
+          component="h1"
+          sx={{
+            fontWeight: "bold",
+            mb: 2,
+            fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
+            color: "#333",
+          }}
+        >
+          Welcome to SAIL Health Portal
+        </Typography>
 
-      <div className="w-100" style={{ maxWidth: "500px" }}>
-        <button
-          className="btn btn-primary w-100 mb-3 py-2 fw-bold"
-          onClick={() => navigate("/auth/employee/login")}
-          aria-label="Continue as Employee"
+        <Typography
+          variant="h6"
+          sx={{
+            mb: 4,
+            color: "#666",
+            fontSize: { xs: "1rem", sm: "1.25rem", md: "1.5rem" },
+          }}
         >
-          Continue as Employee
-        </button>
-        <button
-          className="btn btn-success w-100 py-2 fw-bold"
-          onClick={() => navigate("/auth/doctor/login")}
-          aria-label="Continue as Doctor"
+          Manage health records, reports, and diagnostics with ease.
+        </Typography>
+
+        <Container
+          maxWidth="md"
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+            gap: 3,
+            width: "100%",
+          }}
         >
-          Continue as Doctor
-        </button>
-      </div>
-    </div>
+          <Card
+            sx={{
+              cursor: "pointer",
+              transition: "transform 0.2s, box-shadow 0.2s",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e0e0e0",
+              "&:hover": {
+                transform: "translateY(-8px)",
+                boxShadow: 3,
+              },
+            }}
+            onClick={() => navigate("/auth/employee/login")}
+          >
+            <CardContent
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                textAlign: "center",
+                py: 4,
+              }}
+            >
+              <Person sx={{ fontSize: 48, color: "#1976d2" }} />
+              <Typography variant="h6" sx={{ fontWeight: "bold", color: "#333" }}>
+                Employee
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666" }}>
+                Access your health records and reports.
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card
+            sx={{
+              cursor: "pointer",
+              transition: "transform 0.2s, box-shadow 0.2s",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e0e0e0",
+              "&:hover": {
+                transform: "translateY(-8px)",
+                boxShadow: 3,
+              },
+            }}
+            onClick={() => navigate("/auth/doctor/login")}
+          >
+            <CardContent
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                textAlign: "center",
+                py: 4,
+              }}
+            >
+              <MedicalServices sx={{ fontSize: 48, color: "#d32f2f" }} />
+              <Typography variant="h6" sx={{ fontWeight: "bold", color: "#333" }}>
+                Doctor
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666" }}>
+                Manage patient reports and health data.
+              </Typography>
+            </CardContent>
+          </Card>
+
+          <Card
+            sx={{
+              cursor: "pointer",
+              transition: "transform 0.2s, box-shadow 0.2s",
+              backgroundColor: "#ffffff",
+              border: "1px solid #e0e0e0",
+              "&:hover": {
+                transform: "translateY(-8px)",
+                boxShadow: 3,
+              },
+            }}
+            onClick={() => navigate("/auth/technician/login")}
+          >
+            <CardContent
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 2,
+                textAlign: "center",
+                py: 4,
+              }}
+            >
+              <Engineering sx={{ fontSize: 48, color: "#ed6c02" }} />
+              <Typography variant="h6" sx={{ fontWeight: "bold", color: "#333" }}>
+                Technician
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#666" }}>
+                Upload and manage diagnostic reports.
+              </Typography>
+            </CardContent>
+          </Card>
+        </Container>
+      </Box>
+
+      <Box
+        sx={{
+          py: 3,
+          backgroundColor: "#f5f5f5",
+          textAlign: "center",
+          borderTop: "1px solid #e0e0e0",
+        }}
+      >
+        <Typography variant="body2" sx={{ color: "#666" }}>
+          &copy; {new Date().getFullYear()} SAIL Health Portal. All rights reserved.
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 

@@ -1,182 +1,508 @@
-import React from "react";
-import { useDoctor } from "../../context/DoctorContext";
+import React, { useState, useEffect } from "react";
+import {
+  Box,
+  Typography,
+  TextField,
+  InputAdornment,
+  Grid,
+  Card,
+  CardContent,
+  CircularProgress,
+  Alert,
+  IconButton,
+  Menu,
+  MenuItem,
+  Button,
+  Divider,
+  Paper,
+  Snackbar,
+  Tabs,
+  Tab,
+  Chip,
+} from "@mui/material";
+import {
+  Search,
+  MoreVert,
+  FileDownload,
+  Share,
+  Delete,
+  Person,
+  Group,
+  Upload,
+} from "@mui/icons-material";
+import { getReports } from "../../Utils/getReports";
+import { useLocation } from "react-router-dom";
+import { saveAs } from "file-saver";
+import { motion } from "framer-motion";
+import ReportUploadDialog from "../../Utils/ReportUploadDialog";
 
 const DoctorDashboard = () => {
-  const { doctor } = useDoctor();
+  const [patientId, setPatientId] = useState("");
+  const [reports, setReports] = useState([]);
+  const [filteredReports, setFilteredReports] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [familyData, setFamilyData] = useState([]);
+  const [selectedTab, setSelectedTab] = useState("You");
+  const [reportTypeTab, setReportTypeTab] = useState("all");
+  const [patientExists, setPatientExists] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const patientIdFromUrl = params.get("patientId");
+    if (patientIdFromUrl) {
+      setPatientId(patientIdFromUrl);
+      handleSearch(patientIdFromUrl);
+    }
+  }, [location.search]);
+
+  const checkPatientExists = async (patientId) => {
+    try {
+      const response = await fetch(`https://sail-backend.onrender.com/get-patient?patientId=${patientId}`);
+      const data = await response.json();
+      return data.exists;
+    } catch (err) {
+      console.error("Error checking patient existence:", err);
+      throw err;
+    }
+  };
+
+  const fetchFamilyData = async (patientId) => {
+    try {
+      const response = await fetch(`https://sail-backend.onrender.com/get-family?patientId=${patientId}`);
+      const data = await response.json();
+      setFamilyData(data.family);
+    } catch (err) {
+      console.error("Error fetching family data:", err);
+      setError("Failed to fetch family data.");
+    }
+  };
+
+  const fetchReports = async (patientId) => {
+    if (!patientId) {
+      setError("Please enter a Patient ID.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getReports(patientId);
+      setReports(data);
+      setFilteredReports(data);
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+      setError("Error fetching reports: " + err.message);
+      setReports([]);
+      setFilteredReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async (id) => {
+    const searchId = id || patientId;
+    if (!searchId) {
+      setError("Please enter a Patient ID.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    try {
+      const exists = await checkPatientExists(searchId);
+      setPatientExists(exists);
+
+      if (exists) {
+        await fetchFamilyData(searchId);
+        await fetchReports(searchId);
+      } else {
+        setError("Patient ID does not exist.");
+        setFamilyData([]);
+        setReports([]);
+        setFilteredReports([]);
+      }
+    } catch (err) {
+      console.error("Error during search:", err);
+      setError("An error occurred. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearchChange = (event) => {
+    const newPatientId = event.target.value;
+    setPatientId(newPatientId);
+
+    if (newPatientId !== patientId) {
+      setReports([]);
+      setFamilyData([]);
+      setPatientExists(false);
+      setError("");
+    }
+  };
+
+  const handleMenuOpen = (event, report) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedReport(report);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedReport(null);
+  };
+
+  const handleDownload = async () => {
+    try {
+      const isExpired = new Date() > new Date(selectedReport.expiryTime);
+
+      if (isExpired) {
+        const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filePath: `${selectedReport.patientId}/${selectedReport.name}` }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to regenerate signed URL");
+        }
+
+        const { signedUrl } = await response.json();
+        selectedReport.url = signedUrl;
+        selectedReport.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+      }
+
+      saveAs(selectedReport.url, selectedReport.name);
+      setSnackbarMessage("Report downloaded successfully!");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      setSnackbarMessage("Error downloading file: " + error.message);
+      setSnackbarOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleShare = async () => {
+    try {
+      const isExpired = new Date() > new Date(selectedReport.expiryTime);
+
+      if (isExpired) {
+        const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filePath: `${selectedReport.patientId}/${selectedReport.name}` }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to regenerate signed URL");
+        }
+
+        const { signedUrl } = await response.json();
+        selectedReport.url = signedUrl;
+        selectedReport.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+      }
+
+      navigator.clipboard
+        .writeText(selectedReport.url)
+        .then(() => {
+          setSnackbarMessage("Report URL copied to clipboard!");
+          setSnackbarOpen(true);
+        })
+        .catch((err) => {
+          console.error("Failed to copy URL:", err);
+          setSnackbarMessage("Failed to copy URL: " + err.message);
+          setSnackbarOpen(true);
+        });
+    } catch (error) {
+      console.error("Error sharing file:", error);
+      setSnackbarMessage("Error sharing file: " + error.message);
+      setSnackbarOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleDelete = async () => {
+    try {
+      const response = await fetch("https://sail-backend.onrender.com/delete-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ filePath: `${selectedReport.patientId}/${selectedReport.name}` }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete report");
+      }
+
+      setReports(reports.filter((report) => report.name !== selectedReport.name));
+      setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
+      setSnackbarMessage("Report deleted successfully!");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      setSnackbarMessage("Error deleting file: " + error.message);
+      setSnackbarOpen(true);
+    }
+    handleMenuClose();
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setSelectedTab(newValue);
+    fetchReports(newValue === "You" ? patientId : newValue);
+  };
+
+  const handleReportTypeTabChange = (event, newValue) => {
+    setReportTypeTab(newValue);
+    if (newValue === "all") {
+      setFilteredReports(reports);
+    } else {
+      setFilteredReports(reports.filter((report) => report.department === newValue));
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
+
+  const handleUploadDialogClose = (success, errorMessage) => {
+    setUploadDialogOpen(false);
+    if (success) {
+      fetchReports(patientId);
+      setSnackbarMessage("Report uploaded successfully!");
+      setSnackbarOpen(true);
+    } else if (errorMessage) {
+      setSnackbarMessage("Error uploading file: " + errorMessage);
+      setSnackbarOpen(true);
+    }
+  };
 
   return (
-    <div>
-      <h1>Welcome, {doctor ? doctor.name : "Loading..."}</h1>
-      {/* Add your dashboard content here */}
-    </div>
+    <Box sx={{ p: 4 }}>
+      <Paper elevation={3} sx={{ p: 3, mb: 4 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 2 }}>
+          <TextField
+            variant="outlined"
+            placeholder="Enter Patient ID"
+            value={patientId}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: "text.secondary" }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              width: "100%",
+              maxWidth: 600,
+              borderRadius: 1,
+              boxShadow: 2,
+              paddingLeft: 2,
+            }}
+          />
+          <Button
+            variant="contained"
+            onClick={() => handleSearch()}
+            disabled={!patientId || loading}
+            startIcon={<Search />}
+            sx={{ height: 56 }}
+          >
+            Search
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => setUploadDialogOpen(true)}
+            disabled={!patientId || loading}
+            startIcon={<Upload />}
+            sx={{ height: 56 }}
+          >
+            Upload Report
+          </Button>
+        </Box>
+      </Paper>
+
+      {loading && (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", my: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {patientExists && (
+        <>
+          <Tabs
+            value={selectedTab}
+            onChange={handleTabChange}
+            variant="scrollable"
+            scrollButtons
+            allowScrollButtonsMobile
+            sx={{ mb: 2 }}
+          >
+            <Tab
+              key="You"
+              label={
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Person sx={{ mr: 1 }} />
+                  Employee
+                </Box>
+              }
+              value="You"
+              sx={{ textTransform: "capitalize" }}
+            />
+            {familyData.map((member) => (
+              <Tab
+                key={member.id}
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Group sx={{ mr: 1 }} />
+                    {member.Relation}
+                  </Box>
+                }
+                value={member.id}
+                sx={{ textTransform: "capitalize" }}
+              />
+            ))}
+          </Tabs>
+          <Divider sx={{ my: 2 }} />
+
+          <Tabs
+            value={reportTypeTab}
+            onChange={handleReportTypeTabChange}
+            variant="scrollable"
+            scrollButtons
+            allowScrollButtonsMobile
+            sx={{ mb: 2 }}
+          >
+            <Tab label="All" value="all" />
+            <Tab label="Blood" value="BLOOD" />
+            <Tab label="Sugar" value="SUGAR" />
+            <Tab label="Bp" value="BP" />
+            <Tab label="ECG" value="ECG" />
+            <Tab label="SCAN" value="SCAN" />
+            <Tab label="X-ray" value="X-RAY" />
+            <Tab label="Other" value="other" />
+          </Tabs>
+
+          {filteredReports.length === 0 ? (
+            <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
+              <Typography variant="h6" color="textSecondary">
+                No reports found for the selected category.
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {filteredReports.map((report) => (
+                <Grid item xs={12} sm={6} md={4} key={report.name}>
+                  <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+                    <Card
+                      sx={{
+                        height: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        boxShadow: 3,
+                        transition: "transform 0.2s, box-shadow 0.2s",
+                      }}
+                    >
+                      <CardContent sx={{ flex: 1 }}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <Box>
+                            <Typography
+                              variant="h6"
+                              component="a"
+                              href={report.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                const isExpired = new Date() > new Date(report.expiryTime);
+                                if (isExpired) {
+                                  const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                    },
+                                    body: JSON.stringify({ filePath: `${report.patientId}/${report.name}` }),
+                                  });
+
+                                  if (!response.ok) {
+                                    throw new Error("Failed to regenerate signed URL");
+                                  }
+
+                                  const { signedUrl } = await response.json();
+                                  report.url = signedUrl;
+                                  report.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+                                }
+                                window.open(report.url, "_blank");
+                              }}
+                            >
+                              {report.name}
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              File Size: {report.size} KB
+                            </Typography>
+                            <Typography variant="body2" color="textSecondary">
+                              Uploaded: {report.uploadDate}
+                            </Typography>
+                            <Chip label={report.reportType} size="small" sx={{ mt: 1 }} />
+                          </Box>
+                          <IconButton onClick={(event) => handleMenuOpen(event, report)}>
+                            <MoreVert />
+                          </IconButton>
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </>
+      )}
+
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+        <MenuItem onClick={handleDownload}>
+          <FileDownload sx={{ mr: 1 }} /> Download
+        </MenuItem>
+        <MenuItem onClick={handleShare}>
+          <Share sx={{ mr: 1 }} /> Share
+        </MenuItem>
+        <MenuItem onClick={handleDelete}>
+          <Delete sx={{ mr: 1 }} /> Delete
+        </MenuItem>
+      </Menu>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+        message={snackbarMessage}
+      />
+
+      <ReportUploadDialog
+        open={uploadDialogOpen}
+        onClose={handleUploadDialogClose}
+        patientId={patientId}
+        department={reportTypeTab === "all" ? "Others" : reportTypeTab}
+      />
+    </Box>
   );
 };
 
 export default DoctorDashboard;
-
-
-// import React, { useState, useEffect } from "react";
-// import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
-// import {
-//   Box,
-//   Typography,
-//   Tabs,
-//   Tab,
-//   Table,
-//   TableBody,
-//   TableCell,
-//   TableContainer,
-//   TableHead,
-//   TableRow,
-//   Paper,
-//   CircularProgress,
-//   Alert,
-//   Skeleton,
-//   useTheme,
-//   Button,
-// } from "@mui/material";
-// import { CheckCircle, Pending, Cancel } from "@mui/icons-material"; // Icons for appointment status
-
-// const DoctorDashboard = () => {
-//   const [appointments, setAppointments] = useState([]);
-//   const [selectedTab, setSelectedTab] = useState("Upcoming");
-//   const [loading, setLoading] = useState(true);
-//   const db = getFirestore();
-//   const theme = useTheme();
-
-//   useEffect(() => {
-//     if (selectedTab) {
-//       fetchAppointments();
-//     }
-//   }, [selectedTab]);
-
-//   const fetchAppointments = async () => {
-//     setLoading(true);
-//     try {
-//       const appointmentsRef = collection(db, "Appointments");
-//       const q = query(appointmentsRef, where("Status", "==", selectedTab));
-//       const snapshot = await getDocs(q);
-//       const appointmentsList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-//       setAppointments(appointmentsList);
-//     } catch (error) {
-//       console.error("Error fetching appointments:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const updateAppointmentStatus = async (appointmentId, newStatus) => {
-//     try {
-//       const appointmentRef = doc(db, "Appointments", appointmentId);
-//       await updateDoc(appointmentRef, { Status: newStatus });
-//       fetchAppointments(); // Refresh the list after updating
-//     } catch (error) {
-//       console.error("Error updating appointment status:", error);
-//     }
-//   };
-
-//   const getStatusIcon = (status) => {
-//     switch (status) {
-//       case "Completed":
-//         return <CheckCircle sx={{ color: theme.palette.success.main }} />;
-//       case "Upcoming":
-//         return <Pending sx={{ color: theme.palette.warning.main }} />;
-//       case "Failed":
-//         return <Cancel sx={{ color: theme.palette.error.main }} />;
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <Box sx={{ p: 3 }}>
-//       <Typography variant="h4" fontWeight="bold" gutterBottom>
-//         Doctor Dashboard
-//       </Typography>
-//       <Tabs
-//         value={selectedTab}
-//         onChange={(e, newValue) => setSelectedTab(newValue)}
-//         indicatorColor="primary"
-//         textColor="primary"
-//         variant="fullWidth"
-//         sx={{ mb: 3 }}
-//       >
-//         <Tab label="Upcoming" value="Upcoming" />
-//         <Tab label="Completed" value="Completed" />
-//         <Tab label="Failed" value="Failed" />
-//       </Tabs>
-//       {loading ? (
-//         <Box>
-//           {Array.from({ length: 5 }).map((_, index) => (
-//             <Skeleton key={index} variant="rectangular" width="100%" height={60} sx={{ mb: 2 }} />
-//           ))}
-//         </Box>
-//       ) : (
-//         <>
-//           {appointments.length === 0 ? (
-//             <Alert severity="info" sx={{ mt: 3 }}>
-//               No appointments found for the selected status.
-//             </Alert>
-//           ) : (
-//             <TableContainer component={Paper} sx={{ mt: 3 }}>
-//               <Table>
-//                 <TableHead>
-//                   <TableRow>
-//                     <TableCell>Patient Name</TableCell>
-//                     <TableCell>Date</TableCell>
-//                     <TableCell>Time</TableCell>
-//                     <TableCell>Status</TableCell>
-//                     <TableCell>Actions</TableCell>
-//                   </TableRow>
-//                 </TableHead>
-//                 <TableBody>
-//                   {appointments.map((appointment) => (
-//                     <TableRow
-//                       key={appointment.id}
-//                       sx={{
-//                         "&:nth-of-type(odd)": { backgroundColor: theme.palette.action.hover },
-//                       }}
-//                     >
-//                       <TableCell>{appointment.EmployeeId}</TableCell>
-//                       <TableCell>{appointment.Date}</TableCell>
-//                       <TableCell>{appointment.Time}</TableCell>
-//                       <TableCell>
-//                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-//                           {getStatusIcon(appointment.Status)}
-//                           {appointment.Status}
-//                         </Box>
-//                       </TableCell>
-//                       <TableCell>
-//                         {appointment.Status === "Upcoming" && (
-//                           <>
-//                             <Button
-//                               variant="contained"
-//                               color="success"
-//                               sx={{ mr: 1 }}
-//                               onClick={() => updateAppointmentStatus(appointment.id, "Completed")}
-//                             >
-//                               Mark as Completed
-//                             </Button>
-//                             <Button
-//                               variant="contained"
-//                               color="error"
-//                               onClick={() => updateAppointmentStatus(appointment.id, "Failed")}
-//                             >
-//                               Mark as Failed
-//                             </Button>
-//                           </>
-//                         )}
-//                       </TableCell>
-//                     </TableRow>
-//                   ))}
-//                 </TableBody>
-//               </Table>
-//             </TableContainer>
-//           )}
-//         </>
-//       )}
-//     </Box>
-//   );
-// };
-
-// export default DoctorDashboard;

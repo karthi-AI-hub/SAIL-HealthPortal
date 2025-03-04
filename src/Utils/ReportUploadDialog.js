@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography, CircularProgress } from "@mui/material";
 
-const ReportUploadDialog = ({ open, onClose, patientId }) => {
+const ReportUploadDialog = ({ open, onClose, patientId, department }) => {
   const [reportName, setReportName] = useState("");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -18,9 +18,10 @@ const ReportUploadDialog = ({ open, onClose, patientId }) => {
         formData.append("file", file);
         formData.append("patientId", patientId);
         formData.append("fileName", reportName);
+        formData.append("department", department);
 
         const response = await fetch("https://sail-backend.onrender.com/upload-report", {
-          method: "POST",
+            method: "POST",
           body: formData,
         });
 
@@ -29,7 +30,6 @@ const ReportUploadDialog = ({ open, onClose, patientId }) => {
           throw new Error(errorData.error || "Failed to upload file");
         }
 
-        const data = await response.json();
         alert("File uploaded successfully!");
         onClose(true); 
       } catch (error) {

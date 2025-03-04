@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { useDoctor } from "../../context/DoctorContext";
+import { useTechnician } from "../../context/TechnicianContext";
+import TechnicianProfileEdit from "../../components/TechnicianProfileEdit";
 import {
   Box,
   Grid,
@@ -23,9 +24,8 @@ import {
   Alert,
 } from "@mui/material";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Person, Email, Phone, ErrorOutline, Edit, Schedule } from "@mui/icons-material";
+import { Person, Email, Phone, ErrorOutline, Edit } from "@mui/icons-material";
 import { motion } from "framer-motion";
-import DoctorProfileEdit from "../../components/DoctorProfileEdit";
 
 const ProfileSkeleton = () => (
   <Grid container spacing={3}>
@@ -61,7 +61,7 @@ const ErrorComponent = ({ error, onRetry }) => {
   );
 };
 
-const ProfileHeader = ({ doctorData, onEditClick }) => {
+const ProfileHeader = ({ technicianData, onEditClick }) => {
   const theme = useTheme();
   return (
     <Card
@@ -97,21 +97,18 @@ const ProfileHeader = ({ doctorData, onEditClick }) => {
             transition: "background-color 0.3s",
           },
         }}
-        src={doctorData?.ProfileImage || "/default-avatar.png"}
-        alt={doctorData?.Name}
+        src={technicianData?.ProfileImage || "/default-avatar.png"}
+        alt={technicianData?.Name}
       >
-        {doctorData?.Name?.charAt(0) || "D"}
+        {technicianData?.Name?.charAt(0) || "T"}
       </Avatar>
       <Typography variant="h4" fontWeight="bold" color="textPrimary" gutterBottom>
-        {doctorData?.Name || "N/A"}
-      </Typography>
-      <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-        {doctorData?.DoctorID || "N/A"}
+        {technicianData?.Name || "N/A"}
       </Typography>
       <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2, flexWrap: "wrap" }}>
         <Chip
           icon={<Email />}
-          label={doctorData?.Email || "N/A"}
+          label={technicianData?.Email || "N/A"}
           variant="outlined"
           sx={{
             "&:hover": {
@@ -119,12 +116,12 @@ const ProfileHeader = ({ doctorData, onEditClick }) => {
               color: "white",
               transform: "scale(1.05)",
             },
-            transition: "background-color 0.3s, color 0.3s, transform 0.2s",
+            transition: "background-color 0.3s, color 0.3s",
           }}
         />
         <Chip
           icon={<Phone />}
-          label={doctorData?.Phone || "N/A"}
+          label={technicianData?.Phone || "N/A"}
           variant="outlined"
           sx={{
             "&:hover": {
@@ -132,20 +129,7 @@ const ProfileHeader = ({ doctorData, onEditClick }) => {
               color: "white",
               transform: "scale(1.05)",
             },
-            transition: "background-color 0.3s, color 0.3s, transform 0.2s",
-          }}
-        />
-        <Chip
-          icon={<Schedule />}
-          label={doctorData?.Availability || "N/A"}
-          variant="outlined"
-          sx={{
-            "&:hover": {
-              backgroundColor: theme.palette.primary.main,
-              color: "white",
-              transform: "scale(1.05)",
-            },
-            transition: "background-color 0.3s, color 0.3s, transform 0.2s",
+            transition: "background-color 0.3s, color 0.3s",
           }}
         />
       </Box>
@@ -153,8 +137,8 @@ const ProfileHeader = ({ doctorData, onEditClick }) => {
         variant="contained"
         color="primary"
         startIcon={<Edit />}
-        sx={{ mt: 2 }}
         onClick={onEditClick}
+        sx={{ mt: 2 }}
       >
         Edit Profile
       </Button>
@@ -162,15 +146,12 @@ const ProfileHeader = ({ doctorData, onEditClick }) => {
   );
 };
 
-const DoctorDataTable = ({ doctorData }) => {
+const TechnicianDataTable = ({ technicianData }) => {
   const theme = useTheme();
   const orderedKeys = [
     "Name",
-    "DoctorID",
-    "Specialization",
     "Email",
     "Phone",
-    "Availability",
   ];
 
   return (
@@ -218,7 +199,7 @@ const DoctorDataTable = ({ doctorData }) => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body1" color="textSecondary">
-                      {doctorData[key] || "N/A"}
+                      {technicianData[key] || "N/A"}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -231,9 +212,9 @@ const DoctorDataTable = ({ doctorData }) => {
   );
 };
 
-const DoctorProfile = () => {
-  const { doctorId } = useDoctor();
-  const [doctorData, setDoctorData] = useState(null);
+const TechnicianProfile = () => {
+  const { technicianId } = useTechnician();
+  const [technicianData, setTechnicianData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [editMode, setEditMode] = useState(false);
@@ -243,27 +224,27 @@ const DoctorProfile = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
-    if (doctorId) {
-      fetchDoctorData();
+    if (technicianId) {
+      fetchTechnicianData();
     }
-  }, [doctorId]);
+  }, [technicianId]);
 
-  const fetchDoctorData = async () => {
+  const fetchTechnicianData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const docRef = doc(db, "Doctors", doctorId);
+      const docRef = doc(db, "Technicians", technicianId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
         delete data.LastLogin;
         delete data.CreatedAt;
-        setDoctorData(data);
+        setTechnicianData(data);
       } else {
-        setError("No data found for the doctor.");
+        setError("No data found for the technician.");
       }
     } catch (err) {
-      setError("Failed to fetch doctor data. Please try again later.");
+      setError("Failed to fetch technician data. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -279,18 +260,18 @@ const DoctorProfile = () => {
       {loading ? (
         <ProfileSkeleton />
       ) : error ? (
-        <ErrorComponent error={error} onRetry={fetchDoctorData} />
+        <ErrorComponent error={error} onRetry={fetchTechnicianData} />
       ) : (
         <Box sx={{ mt: 3 }}>
-          <ProfileHeader doctorData={doctorData} onEditClick={handleEditClick} />
-          <DoctorDataTable doctorData={doctorData} />
+          <ProfileHeader technicianData={technicianData} onEditClick={handleEditClick} />
+          <TechnicianDataTable technicianData={technicianData} />
         </Box>
       )}
 
-      <DoctorProfileEdit
+      <TechnicianProfileEdit
         open={editMode}
         onClose={() => setEditMode(false)}
-        doctorId={doctorId}
+        technicianId={technicianId}
       />
 
       <Snackbar open={alert.open} autoHideDuration={6000} onClose={handleCloseAlert}>
@@ -302,4 +283,4 @@ const DoctorProfile = () => {
   );
 };
 
-export default DoctorProfile;
+export default TechnicianProfile;

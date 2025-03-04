@@ -81,7 +81,6 @@ const EmployeeDoctors = () => {
     const filteredDoctor = { ...doctor };
     delete filteredDoctor.LastLogin;
     delete filteredDoctor.CreatedAt;
-    delete filteredDoctor.Pass;
     setSelectedDoctor(filteredDoctor);
     setOpenProfileModal(true);
   };
@@ -143,7 +142,6 @@ const EmployeeDoctors = () => {
               icon={<Schedule />}
               label={selectedDoctor?.Availability || "N/A"}
               variant="outlined"
-              color={selectedDoctor?.Availability === "Available" ? "success" : "error"}
             />
           </Box>
         </Box>

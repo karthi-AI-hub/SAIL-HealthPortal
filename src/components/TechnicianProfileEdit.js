@@ -24,11 +24,11 @@ import {
   Tooltip,
 } from "@mui/material";
 import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
-import { Email, Phone, LocationOn, Close, Save, Cancel, Add, Delete, Schedule } from "@mui/icons-material";
+import { Email, Phone, Close, Save, Cancel, Add, Delete } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
-const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
-  const [doctorData, setDoctorData] = useState(null);
+const TechnicianProfileEdit = ({ open, onClose, technicianId }) => {
+  const [technicianData, setTechnicianData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({});
@@ -39,28 +39,28 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
   const db = getFirestore();
 
   useEffect(() => {
-    if (doctorId) {
-      fetchDoctorData();
+    if (technicianId) {
+      fetchTechnicianData();
     }
-  }, [doctorId]);
+  }, [technicianId]);
 
-  const fetchDoctorData = async () => {
+  const fetchTechnicianData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const docRef = doc(db, "Doctors", doctorId);
+      const docRef = doc(db, "Technicians", technicianId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
         delete data.LastLogin;
         delete data.CreatedAt;
-        setDoctorData(data);
+        setTechnicianData(data);
         setFormData(data);
       } else {
-        setError("No data found for the doctor.");
+        setError("No data found for the technician.");
       }
     } catch (err) {
-      setError("Failed to fetch doctor data. Please try again later.");
+      setError("Failed to fetch technician data. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -92,9 +92,9 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
 
   const handleSave = async () => {
     try {
-      const docRef = doc(db, "Doctors", doctorId);
+      const docRef = doc(db, "Technicians", technicianId);
       await updateDoc(docRef, formData);
-      setDoctorData(formData);
+      setTechnicianData(formData);
       onClose();
       setAlert({ open: true, message: "Data saved successfully!", severity: "success" });
     } catch (err) {
@@ -136,27 +136,23 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
           color: "white",
           fontSize: "2.5rem",
         }}
-        src={doctorData?.ProfileImage || "/default-avatar.png"}
-        alt={doctorData?.Name}
+        src={technicianData?.ProfileImage || "/default-avatar.png"}
+        alt={technicianData?.Name}
       >
-        {doctorData?.Name?.charAt(0) || "D"}
+        {technicianData?.Name?.charAt(0) || "T"}
       </Avatar>
       <Typography variant="h4" fontWeight="bold" color="textPrimary" gutterBottom>
-        {doctorData?.Name || "N/A"}
-      </Typography>
-      <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-        {doctorData?.DoctorID || "N/A"}
+        {technicianData?.Name || "N/A"}
       </Typography>
       <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
-        <Chip icon={<Email />} label={doctorData?.Email || "N/A"} variant="outlined" />
-        <Chip icon={<Phone />} label={doctorData?.Phone || "N/A"} variant="outlined" />
-        <Chip icon={<Schedule />} label={doctorData?.Availability || "N/A"} variant="outlined" />
+        <Chip icon={<Email />} label={technicianData?.Email || "N/A"} variant="outlined" />
+        <Chip icon={<Phone />} label={technicianData?.Phone || "N/A"} variant="outlined" />
       </Box>
     </Box>
   );
 
-  const renderDoctorData = () => {
-    const orderedKeys = ["DoctorID", "Email", "Name", "Specialization", "Phone", "Availability"];
+  const renderTechnicianData = () => {
+    const orderedKeys = ["Name", "Email", "Phone"];
     return (
       <TableContainer component={Paper} elevation={0}>
         <Table>
@@ -176,7 +172,7 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    disabled={key === "Email" || key === "DoctorID"}
+                    disabled={key === "Email" || key === "Department"}
                   />
                 </TableCell>
               </TableRow>
@@ -221,7 +217,7 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        Edit Doctor Profile
+        Edit Technician Profile
         <IconButton
           aria-label="close"
           onClick={onClose}
@@ -244,7 +240,7 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
           <>
             {renderProfileHeader()}
             <Divider sx={{ my: 2 }} />
-            {renderDoctorData()}
+            {renderTechnicianData()}
           </>
         )}
       </DialogContent>
@@ -299,4 +295,4 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
   );
 };
 
-export default DoctorProfileEdit;
+export default TechnicianProfileEdit;

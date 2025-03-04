@@ -123,7 +123,7 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
         {employeeData?.Name || "N/A"}
       </Typography>
       <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-        {employeeData?.EmployeeId || "N/A"}
+        {employeeData?.EmployeeID || "N/A"}
       </Typography>
       <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mt: 2 }}>
         <Chip icon={<Email />} label={employeeData?.Email || "N/A"} variant="outlined" />
@@ -134,7 +134,7 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
   );
 
   const renderEmployeeData = () => {
-    const orderedKeys = ["Name", "EmployeeId", "Email", "Phone", "Address"];
+    const orderedKeys = ["Name", "EmployeeID", "Email", "Phone", "Address"];
     return (
       <TableContainer component={Paper} elevation={0}>
         <Table>
@@ -161,7 +161,7 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
 
   const renderFamilyData = () => {
     const member = familyData.find((member) => member.id === selectedTab);
-    const orderedKeys = ["Name", "Relation", "Age", "Email", "Phone", "Address"];
+    const orderedKeys = ["Name", "Relation", "Age", "Email", "Phone"];
     return member ? (
       <TableContainer component={Paper} elevation={0} sx={{ mt: 2 }}>
         <Table>
@@ -229,7 +229,7 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
                 label={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Person sx={{ mr: 1 }} />
-                    You
+                    Employee
                   </Box>
                 }
                 value="You"
