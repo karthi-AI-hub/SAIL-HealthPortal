@@ -255,7 +255,6 @@ const DoctorProfile = () => {
         const data = docSnap.data();
         delete data.LastLogin;
         delete data.CreatedAt;
-        delete data.Pass;
         setDoctorData(data);
       } else {
         setError("No data found for the doctor.");

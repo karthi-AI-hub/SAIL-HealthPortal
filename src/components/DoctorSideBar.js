@@ -28,11 +28,9 @@ import {
   Home,
   CalendarMonth,
   LocalHospital,
-  Medication,
   Person,
   Assignment,
   Logout,
-  Settings,
 } from "@mui/icons-material";
 
 const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
@@ -61,20 +59,16 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
     { text: "Patients", icon: <LocalHospital />, path: "/doctor/patients" },
     { text: "Reports", icon: <Assignment />, path: "/doctor/reports" },
     { text: "Appointments", icon: <CalendarMonth />, path: "/doctor/appointments" },
-    { text: "Prescriptions", icon: <Medication />, path: "/doctor/prescriptions" },
   ];
 
   return (
     <>
-      {/* AppBar with SAIL Logo & Profile Icon */}
       <AppBar position="fixed" sx={{ bgcolor: "#002147" }}>
         <Toolbar>
-          {/* Sidebar Menu Button */}
           <IconButton edge="start" color="inherit" onClick={() => setOpen(true)}>
             <MenuIcon />
           </IconButton>
 
-          {/* SAIL Logo and Title */}
           <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1, justifyContent: "center" }}>
             <img src={logo} alt="SAIL Logo" style={{ width: 40, height: 40, marginRight: 10 }} />
             <Typography variant="h6" sx={{ fontWeight: "bold", color: "#ffffff" }}>
@@ -82,7 +76,6 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
             </Typography>
           </Box>
 
-          {/* Profile Icon (Top Right) */}
           <IconButton onClick={(e) => setAnchorEl(e.currentTarget)}>
             {doctor.profileImage ? (
               <Avatar src={doctor.profileImage} sx={{ width: 40, height: 40 }} />
@@ -93,7 +86,6 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
             )}
           </IconButton>
 
-          {/* Profile Menu */}
           <Menu anchorEl={anchorEl} open={profileMenuOpen} onClose={() => setAnchorEl(null)}>
             <MenuItem disabled>
               <Typography variant="subtitle1" className="doctor-name">
@@ -101,9 +93,9 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
               </Typography>
             </MenuItem>
             <Divider />
-            <MenuItem onClick={() => navigate("/profile")}>
-              <ListItemIcon><Settings fontSize="small" /></ListItemIcon>
-              Settings
+            <MenuItem onClick={() => navigate("/doctor/profile")}>
+              <ListItemIcon><Person fontSize="small" /></ListItemIcon>
+              Profile
             </MenuItem>
             <MenuItem onClick={() => setLogoutDialog(true)}>
               <ListItemIcon><Logout fontSize="small" /></ListItemIcon>
@@ -113,7 +105,6 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
         </Toolbar>
       </AppBar>
 
-      {/* Sidebar Drawer */}
       <Drawer
         anchor="left"
         open={isOpen}
@@ -129,7 +120,6 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
           },
         }}
       >
-        {/* Sidebar Header with Profile Info */}
         <Box>
           <Toolbar sx={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "20px" }}>
             {doctor.profileImage ? (
@@ -143,9 +133,8 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
             <Typography variant="body2" sx={{ color: "#B0BEC5" }}>{doctor.DoctorID || "Logging in..."}</Typography>
           </Toolbar>
 
-          <Divider sx={{ bgcolor: "#FFD700", height: 2 }} /> {/* Gold Divider */}
+          <Divider sx={{ bgcolor: "#FFD700", height: 2 }} />
 
-          {/* Navigation Links */}
           <List>
             {menuItems.map((item, index) => (
               <ListItem key={index} disablePadding>
@@ -167,7 +156,6 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
           </List>
         </Box>
 
-        {/* Logout Button at the Bottom */}
         <Box sx={{ padding: "10px", mb: 2 }}>
           <Divider sx={{ bgcolor: "#FFD700" }} />
           <ListItem disablePadding>
@@ -184,7 +172,6 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
         </Box>
       </Drawer>
 
-      {/* Logout Confirmation Dialog */}
       <Dialog open={logoutDialog} onClose={() => setLogoutDialog(false)}>
         <DialogTitle>Are you sure you want to logout?</DialogTitle>
         <DialogActions>

@@ -54,7 +54,6 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
         const data = docSnap.data();
         delete data.LastLogin;
         delete data.CreatedAt;
-        delete data.Pass;
         setDoctorData(data);
         setFormData(data);
       } else {

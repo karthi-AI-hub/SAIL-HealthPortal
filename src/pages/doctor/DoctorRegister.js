@@ -1,13 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeSlash, Envelope, Key, Person } from "react-bootstrap-icons";
+import { Eye, EyeSlash, Envelope, Key, Person, PersonVcard } from "react-bootstrap-icons";
 import { auth, db } from "../../firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, collection, query, where, getDocs } from "firebase/firestore";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const DoctorRegister = () => {
-  const [companyName, setCompanyName] = useState("");
+  const [doctorName, setDoctorName] = useState("");
   const [email, setEmail] = useState("");
   const [docID, setDocId] = useState("");
   const [services, setServices] = useState("");
@@ -22,11 +22,14 @@ const DoctorRegister = () => {
     return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email);
   };
 
-  
-  const checkPhoneExists = async (empID) => {
-    const workersQuery = query(collection(db, "Doctors"), where("DoctorID", "==", docID));
-    const workersSnapshot = await getDocs(workersQuery);
-    return !workersSnapshot.empty;
+  const checkDoctorIDExists = async (docID) => {
+    const doctorsQuery = query(collection(db, "Doctors"), where("DoctorID", "==", docID));
+    const doctorsSnapshot = await getDocs(doctorsQuery);
+    return !doctorsSnapshot.empty;
+  };
+
+  const isStrongPassword = (password) => {
+    return password.length >= 6;
   };
 
   const handleRegister = async (e) => {
@@ -34,46 +37,58 @@ const DoctorRegister = () => {
     setError("");
     setLoading(true);
 
-    if (!companyName || !email || !docID || !services || !password || !confirmPassword) {
-      setError("All fields are required.");
+    if (!doctorName || !email || !docID || !services || !password || !confirmPassword) {
+      setError("❌ All fields are required.");
       setLoading(false);
       return;
     }
+
     if (!isValidEmail(email)) {
-      setError("Invalid email format.");
+      setError("❌ Invalid email format.");
       setLoading(false);
       return;
     }
-    
+
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError("❌ Passwords do not match.");
+      setLoading(false);
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      setError("❌ Password must be at least 6 characters long.");
       setLoading(false);
       return;
     }
 
     try {
-      const phoneExists = await checkPhoneExists(docID);
-      if (phoneExists) {
-        setError("Doctor ID already registered. Try login.");
+      const doctorIDExist = await checkDoctorIDExists(docID);
+      if (doctorIDExist) {
+        setError("❌ Doctor ID already registered. Try login.");
         setLoading(false);
         return;
       }
+      
       await createUserWithEmailAndPassword(auth, email, password);
 
       await setDoc(doc(db, "Doctors", docID), {
-        DoctorName: companyName,
+        Name: doctorName,
         Email: email,
         DoctorID: docID,
         Specialization: services,
-        Pass: password,
         CreatedAt: serverTimestamp(),
       });
 
       setLoading(false);
       navigate("/auth/doctor/login");
     } catch (err) {
-      setError("Something went wrong. Try again later.");
-      console.log(err.message);
+      let errorMessage = "❌ Registration failed. Please try again.";
+      if (err.code === "auth/email-already-in-use") {
+        errorMessage = "❌ Email is already in use.";
+      } else if (err.code === "auth/weak-password") {
+        errorMessage = "❌ Password is too weak.";
+      }
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -83,62 +98,121 @@ const DoctorRegister = () => {
       <div className="card p-4 shadow w-100" style={{ maxWidth: "450px" }}>
         <h3 className="text-center mb-3">Doctor Registration</h3>
         {error && <div className="alert alert-danger">{error}</div>}
+
         <form onSubmit={handleRegister}>
           <div className="mb-3">
-            <label className="form-label">Doctor Name</label>
+            <label htmlFor="doctorName" className="form-label">Doctor Name</label>
             <div className="input-group">
               <span className="input-group-text"><Person size={20} /></span>
-              <input type="text" className="form-control" value={companyName} onChange={(e) => setCompanyName(e.target.value)} required />
+              <input
+                type="text"
+                id="doctorName"
+                className="form-control"
+                value={doctorName}
+                onChange={(e) => setDoctorName(e.target.value)}
+                required
+                aria-describedby="doctorNameHelp"
+              />
             </div>
           </div>
+
           <div className="mb-3">
-            <label className="form-label">Email</label>
+            <label htmlFor="email" className="form-label">Email</label>
             <div className="input-group">
               <span className="input-group-text"><Envelope size={20} /></span>
-              <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+              <input
+                type="email"
+                id="email"
+                className="form-control"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-describedby="emailHelp"
+              />
             </div>
           </div>
 
-            <div className="mb-3">
-  <label className="form-label">Doctor ID</label>
-  <div className="input-group">
-    <span className="input-group-text">
-      <span className="material-icons">badge</span> 
-    </span>
-    <input type="text" className="form-control" value={docID} onChange={(e) => setDocId(e.target.value)} required />
-    </div>
-          </div>
-
           <div className="mb-3">
-            <label className="form-label">Specialization</label>
+            <label htmlFor="docID" className="form-label">Doctor ID</label>
             <div className="input-group">
-            <span className="input-group-text">
-              <span className="material-icons">vaccines</span>
-              </span>
-              <input type="text" className="form-control" value={services} onChange={(e) => setServices(e.target.value)} required />
+              <span className="input-group-text"><PersonVcard size={20} /></span>
+              <input
+                type="text"
+                id="docID"
+                className="form-control"
+                value={docID}
+                onChange={(e) => setDocId(e.target.value)}
+                required
+                aria-describedby="docIDHelp"
+              />
             </div>
           </div>
+
           <div className="mb-3">
-            <label className="form-label">Password</label>
+            <label htmlFor="services" className="form-label">Specialization</label>
+            <div className="input-group">
+              <span className="input-group-text"><Person size={20} /></span>
+              <input
+                type="text"
+                id="services"
+                className="form-control"
+                value={services}
+                onChange={(e) => setServices(e.target.value)}
+                required
+                aria-describedby="servicesHelp"
+              />
+            </div>
+          </div>
+
+          <div className="mb-3">
+            <label htmlFor="password" className="form-label">Password</label>
             <div className="input-group">
               <span className="input-group-text"><Key size={20} /></span>
-              <input type={showPassword ? "text" : "password"} className="form-control" value={password} onChange={(e) => setPassword(e.target.value)} required />
-              <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPassword(!showPassword)}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="form-control"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                aria-describedby="passwordHelp"
+              />
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
                 {showPassword ? <EyeSlash /> : <Eye />}
               </button>
             </div>
           </div>
+
           <div className="mb-3">
-            <label className="form-label">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
             <div className="input-group">
               <span className="input-group-text"><Key size={20} /></span>
-              <input type={showPassword ? "text" : "password"} className="form-control" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-              <button type="button" className="btn btn-outline-secondary" onClick={() => setShowPassword(!showPassword)}>
+              <input
+                type={showPassword ? "text" : "password"}
+                id="confirmPassword"
+                className="form-control"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                aria-describedby="confirmPasswordHelp"
+              />
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
                 {showPassword ? <EyeSlash /> : <Eye />}
               </button>
             </div>
           </div>
-          <button type="submit" className="btn btn-primary w-100" disabled={loading}>
+
+          <button type="submit" className="btn btn-success w-100" disabled={loading}>
             {loading ? (
               <div className="spinner-border spinner-border-sm text-light" role="status">
                 <span className="visually-hidden">Loading...</span>

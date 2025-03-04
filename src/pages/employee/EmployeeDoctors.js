@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import {
   Box,
@@ -10,7 +10,6 @@ import {
   Button,
   Avatar,
   InputAdornment,
-  CircularProgress,
   Skeleton,
   Alert,
   useTheme,
@@ -27,9 +26,6 @@ import {
   TableContainer,
   TableRow,
   Paper,
-  Rating,
-  Fade,
-  Grow,
   Slide,
 } from "@mui/material";
 import {
@@ -37,10 +33,6 @@ import {
   Email,
   Phone,
   Schedule,
-  Visibility,
-  Star,
-  CheckCircle,
-  Cancel,
 } from "@mui/icons-material";
 import BookAppointment from "../../components/BookAppointment";
 import { useEmployee } from "../../context/EmployeeContext";
@@ -57,11 +49,7 @@ const EmployeeDoctors = () => {
   const { employeeId } = useEmployee();
   const theme = useTheme();
 
-  useEffect(() => {
-    fetchDoctors();
-  }, []);
-
-  const fetchDoctors = async () => {
+  const fetchDoctors = useCallback(async () => {
     setLoading(true);
     try {
       const doctorsRef = collection(db, "Doctors");
@@ -73,7 +61,11 @@ const EmployeeDoctors = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [db]);
+
+  useEffect(() => {
+    fetchDoctors();
+  }, [fetchDoctors]);
 
   const filteredDoctors = doctors.filter((doctor) =>
     (doctor.Name && doctor.Name.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -186,12 +178,10 @@ const EmployeeDoctors = () => {
 
   return (
     <Box sx={{ p: 4 }}>
-      {/* Header */}
       <Typography variant="h4" fontWeight="bold" gutterBottom color="primary">
         Doctors List
       </Typography>
 
-      {/* Search Bar */}
       <TextField
         fullWidth
         placeholder="Search by name or specialization"
@@ -217,7 +207,6 @@ const EmployeeDoctors = () => {
         }}
       />
 
-      {/* Loading State - Skeletons */}
       {loading ? (
         <Grid container spacing={3}>
           {Array.from({ length: 4 }).map((_, index) => (
@@ -236,14 +225,12 @@ const EmployeeDoctors = () => {
         </Grid>
       ) : (
         <>
-          {/* Empty State */}
           {filteredDoctors.length === 0 ? (
             <Alert severity="info" sx={{ mt: 3, borderRadius: 2 }}>
               No doctors found matching your search.
             </Alert>
           ) : (
             <Grid container spacing={3}>
-              {/* Render Doctors */}
               {filteredDoctors.map((doctor) => (
                 <Grid item xs={12} md={6} key={doctor.id}>
                   <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.3 }}>
@@ -344,10 +331,8 @@ const EmployeeDoctors = () => {
         </>
       )}
 
-      {/* Profile Modal */}
       {selectedDoctor && renderProfileModal()}
 
-      {/* Appointment Modal */}
       {selectedDoctor && (
         <BookAppointment
           open={openAppointmentModal}

@@ -52,7 +52,6 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
         const data = docSnap.data();
         delete data.LastLogin;
         delete data.CreatedAt;
-        delete data.Pass;
         setEmployeeData(data);
       } else {
         setError("No data found for the employee.");
