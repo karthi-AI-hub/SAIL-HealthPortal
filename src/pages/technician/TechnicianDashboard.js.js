@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -19,6 +19,7 @@ import {
   Tabs,
   Tab,
   Chip,
+  Tooltip,
 } from "@mui/material";
 import {
   Search,
@@ -28,12 +29,13 @@ import {
   Person,
   Group,
   Upload,
+  Add,
 } from "@mui/icons-material";
 import { getReports } from "../../Utils/getReports";
-import { useLocation } from "react-router-dom";
 import { saveAs } from "file-saver";
 import { motion } from "framer-motion";
 import ReportUploadDialog from "../../Utils/ReportUploadDialog";
+import AddFamilyMemberDialog from "../../components/AddFamilyMemberDialog";
 
 const TechnicianDashboard = () => {
   const [patientId, setPatientId] = useState("");
@@ -50,7 +52,8 @@ const TechnicianDashboard = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const location = useLocation();
+  const [newFamilyMemberDialogOpen, setNewFamilyMemberDialogOpen] = useState(false);
+  const [savingFamilyMember, setSavingFamilyMember] = useState(false);
 
   const checkPatientExists = async (patientId) => {
     try {
@@ -68,14 +71,15 @@ const TechnicianDashboard = () => {
       const response = await fetch(`https://sail-backend.onrender.com/get-family?patientId=${patientId}`);
       const data = await response.json();
       setFamilyData(data.family);
+      return data.family;
     } catch (err) {
       console.error("Error fetching family data:", err);
       setError("Failed to fetch family data.");
     }
   };
 
-  const fetchReports = async (patientId) => {
-    if (!patientId) {
+  const fetchReports = async (id) => {
+    if (!id) {
       setError("Please enter a Patient ID.");
       return;
     }
@@ -83,13 +87,12 @@ const TechnicianDashboard = () => {
     setLoading(true);
     setError("");
     try {
-      const data = await getReports(patientId);
+      const data = await getReports(id);
       setReports(data);
-      setFilteredReports(data);
+      filterReports(data, reportTypeTab);
     } catch (err) {
       console.error("Error fetching reports:", err);
-      setError("Error fetching reports: " + err.message);
-      setReports([]);
+            setReports([]);
       setFilteredReports([]);
     } finally {
       setLoading(false);
@@ -110,6 +113,7 @@ const TechnicianDashboard = () => {
       setPatientExists(exists);
 
       if (exists) {
+        setSelectedTab("You");
         await fetchFamilyData(searchId);
         await fetchReports(searchId);
       } else {
@@ -222,6 +226,35 @@ const TechnicianDashboard = () => {
     handleMenuClose();
   };
 
+  const handleView = async (e, report) => {
+    e.preventDefault();
+    try {
+      const isExpired = new Date() > new Date(report.expiryTime);
+      if (isExpired) {
+        const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filePath: `${report.patientId}/${report.name}` }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to regenerate signed URL");
+        }
+
+        const { signedUrl } = await response.json();
+        report.url = signedUrl;
+        report.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+      }
+      window.open(report.url, "_blank");
+    } catch (error) {
+      console.error("Error viewing file:", error);
+      setSnackbarMessage("Error viewing file: " + error.message);
+      setSnackbarOpen(true);
+    }
+  };
+
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
     fetchReports(newValue === "You" ? patientId : newValue);
@@ -229,10 +262,14 @@ const TechnicianDashboard = () => {
 
   const handleReportTypeTabChange = (event, newValue) => {
     setReportTypeTab(newValue);
-    if (newValue === "all") {
+    filterReports(reports, newValue);
+  };
+
+  const filterReports = (reports, reportType) => {
+    if (reportType === "all") {
       setFilteredReports(reports);
     } else {
-      setFilteredReports(reports.filter((report) => report.department === newValue));
+      setFilteredReports(reports.filter((report) => report.department === reportType));
     }
   };
 
@@ -243,13 +280,32 @@ const TechnicianDashboard = () => {
   const handleUploadDialogClose = (success, errorMessage) => {
     setUploadDialogOpen(false);
     if (success) {
-      fetchReports(patientId);
+      fetchReports(selectedTab === "You" ? patientId : selectedTab);
       setSnackbarMessage("Report uploaded successfully!");
       setSnackbarOpen(true);
     } else if (errorMessage) {
       setSnackbarMessage("Error uploading file: " + errorMessage);
       setSnackbarOpen(true);
     }
+  };
+
+  const handleAddFamilyMember = () => {
+    setNewFamilyMemberDialogOpen(true);
+    setSelectedTab("You");
+  };
+
+  const handleFamilyMemberDialogClose = () => {
+    setNewFamilyMemberDialogOpen(false);
+    setSelectedTab("You");
+    fetchReports(patientId);
+  };
+
+  const handleFamilyMemberAdded = async () => {
+    setSavingFamilyMember(true);
+    await fetchFamilyData(patientId);
+    setSelectedTab("You");
+    fetchReports(patientId);
+    setSavingFamilyMember(false);
   };
 
   return (
@@ -288,156 +344,145 @@ const TechnicianDashboard = () => {
           <Button
             variant="contained"
             onClick={() => setUploadDialogOpen(true)}
-            disabled={!patientId || loading}
+            disabled={!patientExists || loading}
             startIcon={<Upload />}
             sx={{ height: 56 }}
           >
             Upload Report
           </Button>
         </Box>
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {error}
+          </Alert>
+        )}
       </Paper>
 
-      {loading && (
+      {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", my: 4 }}>
           <CircularProgress />
         </Box>
-      )}
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {patientExists && (
-        <>
-          <Tabs
-            value={selectedTab}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons
-            allowScrollButtonsMobile
-            sx={{ mb: 2 }}
-          >
-            <Tab
-              key="You"
-              label={
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Person sx={{ mr: 1 }} />
-                  Employee
-                </Box>
-              }
-              value="You"
-              sx={{ textTransform: "capitalize" }}
-            />
-            {familyData.map((member) => (
+      ) : (
+        patientExists && (
+          <>
+            <Tabs
+              value={selectedTab}
+              onChange={handleTabChange}
+              variant="scrollable"
+              scrollButtons
+              allowScrollButtonsMobile
+              sx={{ mb: 2 }}
+            >
               <Tab
-                key={member.id}
+                key="You"
                 label={
                   <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Group sx={{ mr: 1 }} />
-                    {member.Relation}
+                    <Person sx={{ mr: 1 }} />
+                    Employee
                   </Box>
                 }
-                value={member.id}
+                value="You"
                 sx={{ textTransform: "capitalize" }}
               />
-            ))}
-          </Tabs>
-          <Divider sx={{ my: 2 }} />
-
-          <Tabs
-            value={reportTypeTab}
-            onChange={handleReportTypeTabChange}
-            variant="scrollable"
-            scrollButtons
-            allowScrollButtonsMobile
-            sx={{ mb: 2 }}
-          >
-            <Tab label="All" value="all" />
-            <Tab label="Blood" value="BLOOD" />
-            <Tab label="Sugar" value="SUGAR" />
-            <Tab label="Bp" value="BP" />
-            <Tab label="ECG" value="ECG" />
-            <Tab label="SCAN" value="SCAN" />
-            <Tab label="X-ray" value="X-RAY" />
-            <Tab label="Other" value="other" />
-          </Tabs>
-
-          {filteredReports.length === 0 ? (
-            <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
-              <Typography variant="h6" color="textSecondary">
-                No reports found for the selected category.
-              </Typography>
-            </Box>
-          ) : (
-            <Grid container spacing={3}>
-              {filteredReports.map((report) => (
-                <Grid item xs={12} sm={6} md={4} key={report.name}>
-                  <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
-                    <Card
-                      sx={{
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        boxShadow: 3,
-                        transition: "transform 0.2s, box-shadow 0.2s",
-                      }}
-                    >
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <Box>
-                            <Typography
-                              variant="h6"
-                              component="a"
-                              href={report.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={async (e) => {
-                                e.preventDefault();
-                                const isExpired = new Date() > new Date(report.expiryTime);
-                                if (isExpired) {
-                                  const response = await fetch("https://sail-backend.onrender.com/regenerate-signed-url", {
-                                    method: "POST",
-                                    headers: {
-                                      "Content-Type": "application/json",
-                                    },
-                                    body: JSON.stringify({ filePath: `${report.patientId}/${report.name}` }),
-                                  });
-
-                                  if (!response.ok) {
-                                    throw new Error("Failed to regenerate signed URL");
-                                  }
-
-                                  const { signedUrl } = await response.json();
-                                  report.url = signedUrl;
-                                  report.expiryTime = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
-                                }
-                                window.open(report.url, "_blank");
-                              }}
-                            >
-                              {report.name}
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              File Size: {report.size} KB
-                            </Typography>
-                            <Typography variant="body2" color="textSecondary">
-                              Uploaded: {report.uploadDate}
-                            </Typography>
-                            <Chip label={report.reportType} size="small" sx={{ mt: 1 }} />
-                          </Box>
-                          <IconButton onClick={(event) => handleMenuOpen(event, report)}>
-                            <MoreVert />
-                          </IconButton>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
+              {familyData.map((member) => (
+                <Tab
+                  key={member.id}
+                  label={
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Group sx={{ mr: 1 }} />
+                      {member.Relation}
+                    </Box>
+                  }
+                  value={member.id}
+                  sx={{ textTransform: "capitalize" }}
+                />
               ))}
-            </Grid>
-          )}
-        </>
+              <Tab
+                key="add"
+                label={
+                  <Tooltip title="Add new family member">
+                    <IconButton onClick={handleAddFamilyMember} color="primary">
+                      <Add />
+                    </IconButton>
+                  </Tooltip>
+                }
+                value="add"
+                sx={{ textTransform: "capitalize" }}
+              />
+            </Tabs>
+            <Divider sx={{ my: 2 }} />
+
+            <Tabs
+              value={reportTypeTab}
+              onChange={handleReportTypeTabChange}
+              variant="scrollable"
+              scrollButtons
+              allowScrollButtonsMobile
+              sx={{ mb: 2 }}
+            >
+              <Tab label="All" value="all" />
+              <Tab label="Blood" value="BLOOD" />
+              <Tab label="Sugar" value="SUGAR" />
+              <Tab label="Bp" value="BP" />
+              <Tab label="ECG" value="ECG" />
+              <Tab label="SCAN" value="SCAN" />
+              <Tab label="X-ray" value="X-RAY" />
+              <Tab label="Others" value="OTHERS" />
+            </Tabs>
+
+            {filteredReports.length === 0 ? (
+              <Box sx={{ width: "100%", textAlign: "center", mt: 4 }}>
+                <Typography variant="h6" color="textSecondary">
+                  No reports found for the selected category.
+                </Typography>
+              </Box>
+            ) : (
+              <Grid container spacing={3}>
+                {filteredReports.map((report) => (
+                  <Grid item xs={12} sm={6} md={4} key={report.name}>
+                    <motion.div whileHover={{ scale: 1.05 }} transition={{ type: "spring", stiffness: 300 }}>
+                      <Card
+                        sx={{
+                          height: "100%",
+                          display: "flex",
+                          flexDirection: "column",
+                          boxShadow: 3,
+                          transition: "transform 0.2s, box-shadow 0.2s",
+                        }}
+                      >
+                        <CardContent sx={{ flex: 1 }}>
+                          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <Box>
+                              <Typography
+                                variant="h6"
+                                component="a"
+                                href={report.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => handleView(e, report)}
+                              >
+                                {report.name}
+                              </Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                File Size: {report.size} KB
+                              </Typography>
+                              <Typography variant="body2" color="textSecondary">
+                                Uploaded: {report.uploadDate}
+                              </Typography>
+                            </Box>
+                            <IconButton onClick={(event) => handleMenuOpen(event, report)}>
+                              <MoreVert />
+                            </IconButton>
+                          </Box>
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </>
+        )
       )}
 
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
@@ -459,9 +504,22 @@ const TechnicianDashboard = () => {
       <ReportUploadDialog
         open={uploadDialogOpen}
         onClose={handleUploadDialogClose}
-        patientId={patientId}
-        department={reportTypeTab === "all" ? "Others" : reportTypeTab}
+        patientId={selectedTab === "You" ? patientId : selectedTab}
+        department={reportTypeTab === "all" ? "OTHERS" : reportTypeTab}
       />
+
+      <AddFamilyMemberDialog
+        open={newFamilyMemberDialogOpen}
+        onClose={handleFamilyMemberDialogClose}
+        employeeId={patientId}
+        onFamilyMemberAdded={handleFamilyMemberAdded}
+        saving={savingFamilyMember}
+      />
+      {savingFamilyMember && (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", my: 4 }}>
+          <CircularProgress />
+        </Box>
+      )}
     </Box>
   );
 };

@@ -25,9 +25,10 @@ import {
   Alert,
   Tooltip,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, collection, getDocs, updateDoc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "firebase/firestore";
 import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Save, Cancel, Add } from "@mui/icons-material";
 import { motion } from "framer-motion";
+import AddFamilyMemberDialog from "../components/AddFamilyMemberDialog";
 
 const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   const [employeeData, setEmployeeData] = useState(null);
@@ -41,7 +42,6 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   const [newFieldKey, setNewFieldKey] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
   const [newFamilyMemberDialogOpen, setNewFamilyMemberDialogOpen] = useState(false);
-  const [newFamilyMemberData, setNewFamilyMemberData] = useState({ Name: "", Relation: "", Age: "", Email: "", Phone: "", Address: "" });
   const db = getFirestore();
 
   useEffect(() => {
@@ -121,33 +121,6 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
 
   const handleAddFamilyMember = () => {
     setNewFamilyMemberDialogOpen(true);
-  };
-
-  const handleSaveFamilyMember = async () => {
-    try {
-      const familyRef = collection(db, "Employee", employeeId, "Family");
-      let relationCount = 1;
-      let newMemberId = `${employeeId}_${newFamilyMemberData.Relation}`;
-
-      while (true) {
-        const docRef = doc(familyRef, newMemberId);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-          break;
-        }
-        relationCount++;
-        newMemberId = `${employeeId}_${newFamilyMemberData.Relation}${relationCount}`;
-      }
-
-      await setDoc(doc(familyRef, newMemberId), newFamilyMemberData);
-      fetchFamilyData();
-      setNewFamilyMemberDialogOpen(false);
-      setNewFamilyMemberData({ Name: "", Relation: "", Age: "", Email: "", Phone: "" });
-      setAlert({ open: true, message: "Family member added successfully!", severity: "success" });
-    } catch (err) {
-      setError("Failed to add family member. Please try again later.");
-      setAlert({ open: true, message: "Failed to add family member.", severity: "error" });
-    }
   };
 
   const handleSave = async () => {
@@ -445,59 +418,12 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
           </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={newFamilyMemberDialogOpen} onClose={() => setNewFamilyMemberDialogOpen(false)}>
-        <DialogTitle>Add New Family Member</DialogTitle>
-        <DialogContent>
-          <TextField
-            label="Name"
-            value={newFamilyMemberData.Name}
-            onChange={(e) => setNewFamilyMemberData({ ...newFamilyMemberData, Name: e.target.value })}
-            fullWidth
-            variant="outlined"
-            margin="normal"
-          />
-          <TextField
-            label="Relation"
-            value={newFamilyMemberData.Relation}
-            onChange={(e) => setNewFamilyMemberData({ ...newFamilyMemberData, Relation: e.target.value })}
-            fullWidth
-            variant="outlined"
-            margin="normal"
-          />
-          <TextField
-            label="Age"
-            value={newFamilyMemberData.Age}
-            onChange={(e) => setNewFamilyMemberData({ ...newFamilyMemberData, Age: e.target.value })}
-            fullWidth
-            variant="outlined"
-            margin="normal"
-          />
-          <TextField
-            label="Email"
-            value={newFamilyMemberData.Email}
-            onChange={(e) => setNewFamilyMemberData({ ...newFamilyMemberData, Email: e.target.value })}
-            fullWidth
-            variant="outlined"
-            margin="normal"
-          />
-          <TextField
-            label="Phone"
-            value={newFamilyMemberData.Phone}
-            onChange={(e) => setNewFamilyMemberData({ ...newFamilyMemberData, Phone: e.target.value })}
-            fullWidth
-            variant="outlined"
-            margin="normal"
-          />
-                  </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setNewFamilyMemberDialogOpen(false)} color="secondary">
-            Cancel
-          </Button>
-          <Button onClick={handleSaveFamilyMember} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <AddFamilyMemberDialog
+        open={newFamilyMemberDialogOpen}
+        onClose={() => setNewFamilyMemberDialogOpen(false)}
+        employeeId={employeeId}
+        onFamilyMemberAdded={fetchFamilyData}
+      />
     </Dialog>
   );
 };

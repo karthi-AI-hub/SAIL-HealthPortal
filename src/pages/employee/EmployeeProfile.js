@@ -141,7 +141,7 @@ const EmployeeProfile = () => {
   );
 
   const renderEmployeeData = () => {
-    const orderedKeys = ["Name", "EmployeeId", "Email", "Phone", "Address"]; // Define the desired order of keys
+    const orderedKeys = ["Name", "EmployeeId", "Email", "Phone"];
     return (
       <Card
         component={motion.div}

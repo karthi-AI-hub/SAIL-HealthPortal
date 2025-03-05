@@ -54,7 +54,7 @@ const TechnicianSidebar = ({ technician, isOpen, onMenuClick, setOpen }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Home />, path: "/technician/dashboard" },
     { text: "Profile", icon: <Person />, path: "/technician/profile" },
-    { text: "Reports", icon: <Assignment />, path: "/technician/dashboard"},
+    // { text: "Reports", icon: <Assignment />, path: "/technician/dashboard"},
   ];
 
   return (
