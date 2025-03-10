@@ -7,11 +7,13 @@ const DoctorContext = createContext();
 export const DoctorProvider = ({ children }) => {
   const [doctor, setDoctor] = useState(null);
   const [doctorId, setDoctorId] = useState(null);
+  const [loading, setLoading] = useState(true);
   const db = getFirestore();
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
       if (user) {
         const docEmail = user.email;
         const q = query(collection(db, "Doctors"), where("Email", "==", docEmail));
@@ -21,19 +23,21 @@ export const DoctorProvider = ({ children }) => {
           setDoctor(doctorDoc.data());
           setDoctorId(doctorDoc.id);
         } else {
-          console.error("No Doctor data found");
+          setDoctor(null);
+          setDoctorId(null);
         }
       } else {
         setDoctor(null);
         setDoctorId(null);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, [db]);
 
   return (
-    <DoctorContext.Provider value={{ doctor, doctorId, setDoctorId }}>
+    <DoctorContext.Provider value={{ doctor, doctorId, setDoctorId, loading }}>
       {children}
     </DoctorContext.Provider>
   );

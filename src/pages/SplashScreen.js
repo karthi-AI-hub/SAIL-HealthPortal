@@ -2,11 +2,28 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../assets/logo.png";
-import { Person, MedicalServices, Engineering } from "@mui/icons-material"; // Material-UI icons
+import { Person, MedicalServices, Engineering } from "@mui/icons-material";
 import { Card, CardContent, Typography, Box, Container } from "@mui/material";
+import { useEffect } from "react";
+import { useEmployee } from "../context/EmployeeContext";
+import { useDoctor } from "../context/DoctorContext";
+import { useTechnician } from "../context/TechnicianContext";
 
 const SplashScreen = () => {
   const navigate = useNavigate();
+  const { employeeId } = useEmployee();
+  const { doctorId } = useDoctor();
+  const { technicianId } = useTechnician();
+
+  useEffect(() => {
+    if (employeeId) {
+      navigate('/employee/dashboard');
+    } else if (doctorId) {
+      navigate('/doctor/dashboard');
+    } else if (technicianId) {
+      navigate('/technician/dashboard');
+    }
+  }, [employeeId, doctorId, technicianId]);
 
   return (
     <Box

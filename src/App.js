@@ -1,4 +1,5 @@
 import React from "react";
+import { AuthProvider } from "./context/AuthContext";
 import { EmployeeProvider } from "./context/EmployeeContext";
 import { DoctorProvider } from "./context/DoctorContext";
 import { TechnicianProvider } from "./context/TechnicianContext";
@@ -36,45 +37,47 @@ import TechnicianPatients from "./pages/technician/TechnicianPatients";
 
 function App() {
   return (
-    <EmployeeProvider>
-      <DoctorProvider>
-        <TechnicianProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<SplashScreen />} />
-              <Route path="/auth/employee/register" element={<EmployeRegister />} />
-              <Route path="/auth/employee/login" element={<EmployeLogin />} />
-              <Route path="/auth/doctor/register" element={<DoctorRegister />} />
-              <Route path="/auth/doctor/login" element={<DoctorLogin />} />
-              <Route path="/auth/technician/register" element={<TechnicianRegister />} />
-              <Route path="/auth/technician/login" element={<TechnicianLogin />} />
+    <AuthProvider>
+      <EmployeeProvider>
+        <DoctorProvider>
+          <TechnicianProvider>
+            <Router>
+              <Routes>
+                <Route path="/" element={<SplashScreen />} />
+                <Route path="/auth/employee/register" element={<EmployeRegister />} />
+                <Route path="/auth/employee/login" element={<EmployeLogin />} />
+                <Route path="/auth/doctor/register" element={<DoctorRegister />} />
+                <Route path="/auth/doctor/login" element={<DoctorLogin />} />
+                <Route path="/auth/technician/register" element={<TechnicianRegister />} />
+                <Route path="/auth/technician/login" element={<TechnicianLogin />} />
 
-              <Route element={<PrivateRoute role="employee"><EmployeeLayout /></PrivateRoute>}>
-                <Route path="/employee/dashboard" element={<EmployeDashboard />} />
-                <Route path="/employee/profile" element={<EmployeeProfile />} />
-                <Route path="/employee/doctorslist" element={<EmployeeDoctors />} />
-                <Route path="/employee/appointments" element={<EmployeeAppointments />} />
-              </Route>
+                <Route element={<PrivateRoute role="employee"><EmployeeLayout /></PrivateRoute>}>
+                  <Route path="/employee/dashboard" element={<EmployeDashboard />} />
+                  <Route path="/employee/profile" element={<EmployeeProfile />} />
+                  <Route path="/employee/doctorslist" element={<EmployeeDoctors />} />
+                  <Route path="/employee/appointments" element={<EmployeeAppointments />} />
+                </Route>
 
-              <Route element={<PrivateRoute role="doctor"><DoctorLayout /></PrivateRoute>}>
-                <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
-                <Route path="/doctor/profile" element={<DoctorProfile />} />
-                <Route path="/doctor/patients" element={<DoctorPatients />} />
-                <Route path="/doctor/appointments" element={<DoctorAppointments />} />
-              </Route>
+                <Route element={<PrivateRoute role="doctor"><DoctorLayout /></PrivateRoute>}>
+                  <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
+                  <Route path="/doctor/profile" element={<DoctorProfile />} />
+                  <Route path="/doctor/patients" element={<DoctorPatients />} />
+                  <Route path="/doctor/appointments" element={<DoctorAppointments />} />
+                </Route>
 
-              <Route element={<PrivateRoute role="technician"><TechnicianLayout /></PrivateRoute>}>
-                <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
-                <Route path="/technician/profile" element={<TechnicianProfile />} />
-                <Route path="/technician/patients" element={<TechnicianPatients />} />
-              </Route>
+                <Route element={<PrivateRoute role="technician"><TechnicianLayout /></PrivateRoute>}>
+                  <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
+                  <Route path="/technician/profile" element={<TechnicianProfile />} />
+                  <Route path="/technician/patients" element={<TechnicianPatients />} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Router>
-        </TechnicianProvider>
-      </DoctorProvider>
-    </EmployeeProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Router>
+          </TechnicianProvider>
+        </DoctorProvider>
+      </EmployeeProvider>
+    </AuthProvider>
   );
 }
 

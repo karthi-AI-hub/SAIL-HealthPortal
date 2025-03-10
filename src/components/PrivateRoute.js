@@ -1,24 +1,21 @@
 import React from "react";
 import { Navigate } from "react-router-dom";
-import { useEmployee } from "../context/EmployeeContext";
-import { useDoctor } from "../context/DoctorContext";
-import { useTechnician } from "../context/TechnicianContext";
+import { useAuth } from "../context/AuthContext";
 import AccessDenied from "../pages/AccessDenied";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const PrivateRoute = ({ children, role }) => {
-  const { employeeId } = useEmployee();
-  const { doctorId } = useDoctor();
-  const { technicianId } = useTechnician();
+  const { user, loading } = useAuth();
 
-  if (role === "employee" && !employeeId) {
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user) {
     return <AccessDenied />;
   }
 
-  if (role === "doctor" && !doctorId) {
-    return <AccessDenied />;
-  }
-
-  if (role === "technician" && !technicianId) {
+  if (role && user.role !== role) {
     return <AccessDenied />;
   }
 
