@@ -7,7 +7,7 @@ const AccessDenied = () => {
   const navigate = useNavigate();
 
   const handleLoginRedirect = () => {
-    navigate("/auth/employee/login");
+    navigate("/");
   };
 
   return (
