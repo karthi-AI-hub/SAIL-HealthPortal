@@ -22,9 +22,10 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
-import { Email, Phone, LocationOn, Close, Save, Cancel, Add, Delete, Schedule } from "@mui/icons-material";
+import { getFirestore, doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
+import { Email, Phone, Close, Save, Cancel, Add, Delete, Schedule } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
 const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
@@ -36,35 +37,31 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
   const [newFieldDialogOpen, setNewFieldDialogOpen] = useState(false);
   const [newFieldKey, setNewFieldKey] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
+  const [saving, setSaving] = useState(false);
   const db = getFirestore();
 
   useEffect(() => {
     if (doctorId) {
-      fetchDoctorData();
+      const unsubscribe = onSnapshot(doc(db, "Doctors", doctorId), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          delete data.LastLogin;
+          delete data.CreatedAt;
+          setDoctorData(data);
+          setFormData(data);
+          setLoading(false);
+        } else {
+          setError("No data found for the doctor.");
+          setLoading(false);
+        }
+      }, (err) => {
+        setError("Failed to fetch doctor data. Please try again later.");
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
     }
   }, [doctorId]);
-
-  const fetchDoctorData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const docRef = doc(db, "Doctors", doctorId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        delete data.LastLogin;
-        delete data.CreatedAt;
-        setDoctorData(data);
-        setFormData(data);
-      } else {
-        setError("No data found for the doctor.");
-      }
-    } catch (err) {
-      setError("Failed to fetch doctor data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -84,13 +81,26 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
     }
   };
 
-  const handleDeleteField = (key) => {
-    const updatedData = { ...formData };
-    delete updatedData[key];
-    setFormData(updatedData);
+  const handleDeleteField = async (key) => {
+    try {
+      const docRef = doc(db, "Doctors", doctorId);
+      await updateDoc(docRef, {
+        [key]: deleteField(),
+      });
+
+      const updatedData = { ...formData };
+      delete updatedData[key];
+      setFormData(updatedData);
+
+      setAlert({ open: true, message: "Field deleted successfully!", severity: "success" });
+    } catch (err) {
+      setError("Failed to delete field. Please try again later.");
+      setAlert({ open: true, message: "Failed to delete field.", severity: "error" });
+    }
   };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
       const docRef = doc(db, "Doctors", doctorId);
       await updateDoc(docRef, formData);
@@ -100,6 +110,8 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
     } catch (err) {
       setError("Failed to update data. Please try again later.");
       setAlert({ open: true, message: "Failed to save data.", severity: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -254,10 +266,10 @@ const DoctorProfileEdit = ({ open, onClose, doctorId }) => {
             <Add />
           </IconButton>
         </Tooltip>
-        <Button onClick={handleSave} color="primary" startIcon={<Save />}>
+        <Button onClick={handleSave} color="primary" startIcon={saving ? <CircularProgress size={20} /> : <Save />} disabled={saving}>
           Save
         </Button>
-        <Button onClick={onClose} color="secondary" startIcon={<Cancel />}>
+        <Button onClick={onClose} color="secondary" startIcon={<Cancel />} disabled={saving}>
           Cancel
         </Button>
       </DialogActions>

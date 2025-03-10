@@ -24,11 +24,12 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from "firebase/firestore";
-import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Save, Cancel, Add } from "@mui/icons-material";
+import { getFirestore, doc, onSnapshot, updateDoc, deleteField, collection } from "firebase/firestore";
+import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Save, Cancel, Add, Delete } from "@mui/icons-material";
 import { motion } from "framer-motion";
-import AddFamilyMemberDialog from "../components/AddFamilyMemberDialog";
+import AddFamilyMemberDialog from "./AddFamilyMemberDialog";
 
 const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   const [employeeData, setEmployeeData] = useState(null);
@@ -42,54 +43,44 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
   const [newFieldKey, setNewFieldKey] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
   const [newFamilyMemberDialogOpen, setNewFamilyMemberDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const db = getFirestore();
 
   useEffect(() => {
     if (employeeId) {
-      fetchEmployeeData();
-      fetchFamilyData();
+      const unsubscribeEmployee = onSnapshot(doc(db, "Employee", employeeId), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          delete data.LastLogin;
+          delete data.CreatedAt;
+          setEmployeeData(data);
+          setFormData(data);
+          setLoading(false);
+        } else {
+          setError("No data found for the employee.");
+          setLoading(false);
+        }
+      }, (err) => {
+        setError("Failed to fetch employee data. Please try again later.");
+        setLoading(false);
+      });
+
+      const unsubscribeFamily = onSnapshot(collection(db, "Employee", employeeId, "Family"), (snapshot) => {
+        const familyList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setFamilyData(familyList);
+      }, (err) => {
+        setError("Failed to fetch family data. Please try again later.");
+      });
+
+      return () => {
+        unsubscribeEmployee();
+        unsubscribeFamily();
+      };
     }
   }, [employeeId]);
-
-  const fetchEmployeeData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const docRef = doc(db, "Employee", employeeId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        delete data.LastLogin;
-        delete data.CreatedAt;
-        setEmployeeData(data);
-        setFormData(data);
-      } else {
-        setError("No data found for the employee.");
-      }
-    } catch (err) {
-      setError("Failed to fetch employee data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFamilyData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const familyRef = collection(db, "Employee", employeeId, "Family");
-      const familySnapshot = await getDocs(familyRef);
-      const familyList = familySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setFamilyData(familyList);
-    } catch (err) {
-      setError("Failed to fetch family data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
@@ -123,7 +114,26 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
     setNewFamilyMemberDialogOpen(true);
   };
 
+  const handleDeleteField = async (key) => {
+    try {
+      const docRef = selectedTab === "You" ? doc(db, "Employee", employeeId) : doc(db, "Employee", employeeId, "Family", selectedTab);
+      await updateDoc(docRef, {
+        [key]: deleteField(),
+      });
+
+      const updatedData = { ...formData };
+      delete updatedData[key];
+      setFormData(updatedData);
+
+      setAlert({ open: true, message: "Field deleted successfully!", severity: "success" });
+    } catch (err) {
+      setError("Failed to delete field. Please try again later.");
+      setAlert({ open: true, message: "Failed to delete field.", severity: "error" });
+    }
+  };
+
   const handleSave = async () => {
+    setSaving(true);
     try {
       if (selectedTab === "You") {
         const docRef = doc(db, "Employee", employeeId);
@@ -141,6 +151,8 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
     } catch (err) {
       setError("Failed to update data. Please try again later.");
       setAlert({ open: true, message: "Failed to save data.", severity: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -238,6 +250,16 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
                     variant="outlined"
                     size="small"
                   />
+                  <Tooltip title="Delete Field">
+                    <IconButton
+                      aria-label="delete"
+                      color="error"
+                      onClick={() => handleDeleteField(key)}
+                      sx={{ mt: 1 }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -289,6 +311,16 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
                     variant="outlined"
                     size="small"
                   />
+                  <Tooltip title="Delete Field">
+                    <IconButton
+                      aria-label="delete"
+                      color="error"
+                      onClick={() => handleDeleteField(key)}
+                      sx={{ mt: 1 }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}
@@ -377,10 +409,10 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
             <Group />
           </IconButton>
         </Tooltip>
-        <Button onClick={handleSave} color="primary" startIcon={<Save />}>
+        <Button onClick={handleSave} color="primary" startIcon={saving ? <CircularProgress size={20} /> : <Save />} disabled={saving}>
           Save
         </Button>
-        <Button onClick={onClose} color="secondary" startIcon={<Cancel />}>
+        <Button onClick={onClose} color="secondary" startIcon={<Cancel />} disabled={saving}>
           Cancel
         </Button>
       </DialogActions>
@@ -422,7 +454,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
         open={newFamilyMemberDialogOpen}
         onClose={() => setNewFamilyMemberDialogOpen(false)}
         employeeId={employeeId}
-        onFamilyMemberAdded={fetchFamilyData}
+        onFamilyMemberAdded={() => setSelectedTab("You")}
       />
     </Dialog>
   );

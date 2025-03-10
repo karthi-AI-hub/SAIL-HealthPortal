@@ -23,7 +23,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, collection, getDocs } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, collection } from "firebase/firestore";
 import { Email, Phone, LocationOn, Person, Group, ErrorOutline, Close, Edit } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
@@ -37,49 +37,38 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
 
   useEffect(() => {
     if (employeeId) {
-      fetchEmployeeData();
-      fetchFamilyData();
-    }
-  }, [employeeId]);
+      const unsubscribeEmployee = onSnapshot(doc(db, "Employee", employeeId), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          delete data.LastLogin;
+          delete data.CreatedAt;
+          setEmployeeData(data);
+          setLoading(false);
+        } else {
+          setError("No data found for the employee.");
+          setLoading(false);
+        }
+      }, (err) => {
+        setError("Failed to fetch employee data. Please try again later.");
+        setLoading(false);
+      });
 
-  const fetchEmployeeData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const docRef = doc(db, "Employee", employeeId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        delete data.LastLogin;
-        delete data.CreatedAt;
-        setEmployeeData(data);
-      } else {
-        setError("No data found for the employee.");
-      }
-    } catch (err) {
-      setError("Failed to fetch employee data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      const unsubscribeFamily = onSnapshot(collection(db, "Employee", employeeId, "Family"), (snapshot) => {
+        const familyList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setFamilyData(familyList);
+      }, (err) => {
+        setError("Failed to fetch family data. Please try again later.");
+      });
 
-  const fetchFamilyData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const familyRef = collection(db, "Employee", employeeId, "Family");
-      const familySnapshot = await getDocs(familyRef);
-      const familyList = familySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setFamilyData(familyList);
-    } catch (err) {
-      setError("Failed to fetch family data. Please try again later.");
-    } finally {
-      setLoading(false);
+      return () => {
+        unsubscribeEmployee();
+        unsubscribeFamily();
+      };
     }
-  };
+  }, [employeeId, db]);
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
@@ -135,11 +124,29 @@ const EmployeeProfileView = ({ open, onClose, employeeId, onEdit }) => {
 
   const renderEmployeeData = () => {
     const orderedKeys = ["Name", "EmployeeID", "Email", "Phone", "Address"];
+    const otherKeys = Object.keys(employeeData || {}).filter(
+      (key) => !orderedKeys.includes(key)
+    );
+
     return (
       <TableContainer component={Paper} elevation={0}>
         <Table>
           <TableBody>
             {orderedKeys.map((key) => (
+              <TableRow key={key}>
+                <TableCell>
+                  <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                    {key.replace(/_/g, " ")}:
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body1" color="textSecondary">
+                    {employeeData[key] || "N/A"}
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ))}
+            {otherKeys.map((key) => (
               <TableRow key={key}>
                 <TableCell>
                   <Typography variant="subtitle1" fontWeight="bold" color="primary">

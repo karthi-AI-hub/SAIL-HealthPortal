@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getFirestore, collection, getDocs } from "firebase/firestore";
+import { getFirestore, collection, onSnapshot } from "firebase/firestore";
 import {
   Box,
   Typography,
@@ -49,23 +49,18 @@ const EmployeeDoctors = () => {
   const { employeeId } = useEmployee();
   const theme = useTheme();
 
-  const fetchDoctors = useCallback(async () => {
-    setLoading(true);
-    try {
-      const doctorsRef = collection(db, "Doctors");
-      const snapshot = await getDocs(doctorsRef);
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "Doctors"), (snapshot) => {
       const doctorsList = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setDoctors(doctorsList);
-    } catch (error) {
-      console.error("Error fetching doctors:", error);
-    } finally {
       setLoading(false);
-    }
-  }, [db]);
+    }, (error) => {
+      console.error("Error fetching doctors:", error);
+      setLoading(false);
+    });
 
-  useEffect(() => {
-    fetchDoctors();
-  }, [fetchDoctors]);
+    return () => unsubscribe();
+  }, [db]);
 
   const filteredDoctors = doctors.filter((doctor) =>
     (doctor.Name && doctor.Name.toLowerCase().includes(searchQuery.toLowerCase())) ||

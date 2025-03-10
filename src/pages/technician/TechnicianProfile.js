@@ -22,15 +22,17 @@ import {
   Button,
   Snackbar,
   Alert,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { getFirestore, doc, getDoc } from "firebase/firestore";
-import { Person, Email, Phone, ErrorOutline, Edit } from "@mui/icons-material";
+import { getFirestore, doc, onSnapshot } from "firebase/firestore";
+import { Person, Email, Phone, ErrorOutline, Edit, Refresh } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
 const ProfileSkeleton = () => (
   <Grid container spacing={3}>
     {Array.from({ length: 6 }).map((_, index) => (
-      <Grid item xs={12} key={index}>
+      <Grid item xs={12} sm={6} md={4} key={index}>
         <Skeleton variant="rectangular" width="100%" height={60} />
       </Grid>
     ))}
@@ -148,11 +150,10 @@ const ProfileHeader = ({ technicianData, onEditClick }) => {
 
 const TechnicianDataTable = ({ technicianData }) => {
   const theme = useTheme();
-  const orderedKeys = [
-    "Name",
-    "Email",
-    "Phone",
-  ];
+  const orderedKeys = ["Name", "Email", "Phone"];
+  const otherKeys = Object.keys(technicianData || {}).filter(
+    (key) => !orderedKeys.includes(key)
+  );
 
   return (
     <Card
@@ -194,7 +195,30 @@ const TechnicianDataTable = ({ technicianData }) => {
                 >
                   <TableCell>
                     <Typography variant="subtitle1" fontWeight="bold" color="primary">
-                      {key.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase())}:
+                      {key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}:
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body1" color="textSecondary">
+                      {technicianData[key] || "N/A"}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {otherKeys.map((key) => (
+                <TableRow
+                  key={key}
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: theme.palette.action.hover,
+                      transform: "scale(1.02)",
+                    },
+                    transition: "background-color 0.3s, transform 0.2s",
+                  }}
+                >
+                  <TableCell>
+                    <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                      {key.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase())}:
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -223,31 +247,39 @@ const TechnicianProfile = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  useEffect(() => {
+  const fetchTechnicianData = () => {
     if (technicianId) {
-      fetchTechnicianData();
+      setLoading(true);
+      const unsubscribe = onSnapshot(
+        doc(db, "Technicians", technicianId),
+        (doc) => {
+          if (doc.exists()) {
+            const data = doc.data();
+            delete data.LastLogin;
+            delete data.CreatedAt;
+            setTechnicianData(data);
+            setError(null);
+          } else {
+            setError("No data found for the technician.");
+          }
+          setLoading(false);
+        },
+        (err) => {
+          setError("Failed to fetch technician data. Please try again later.");
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
     }
+  };
+
+  useEffect(() => {
+    fetchTechnicianData();
   }, [technicianId]);
 
-  const fetchTechnicianData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const docRef = doc(db, "Technicians", technicianId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        delete data.LastLogin;
-        delete data.CreatedAt;
-        setTechnicianData(data);
-      } else {
-        setError("No data found for the technician.");
-      }
-    } catch (err) {
-      setError("Failed to fetch technician data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
+  const handleRefresh = () => {
+    fetchTechnicianData();
   };
 
   const handleEditClick = () => setEditMode(true);
@@ -255,12 +287,22 @@ const TechnicianProfile = () => {
 
   return (
     <Box sx={{ maxWidth: "100%", p: isMobile ? 2 : 4 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        <Typography variant="h4" fontWeight="bold">
+          Technician Profile
+        </Typography>
+        <Tooltip title="Refresh">
+          <IconButton onClick={handleRefresh}>
+            <Refresh />
+          </IconButton>
+        </Tooltip>
+      </Box>
       <Divider sx={{ my: 2 }} />
 
       {loading ? (
         <ProfileSkeleton />
       ) : error ? (
-        <ErrorComponent error={error} onRetry={fetchTechnicianData} />
+        <ErrorComponent error={error} onRetry={handleRefresh} />
       ) : (
         <Box sx={{ mt: 3 }}>
           <ProfileHeader technicianData={technicianData} onEditClick={handleEditClick} />
@@ -272,10 +314,16 @@ const TechnicianProfile = () => {
         open={editMode}
         onClose={() => setEditMode(false)}
         technicianId={technicianId}
+        onSuccess={() => {
+          setAlert({ open: true, message: "Profile updated successfully!", severity: "success" });
+        }}
+        onError={() => {
+          setAlert({ open: true, message: "Failed to update profile.", severity: "error" });
+        }}
       />
 
       <Snackbar open={alert.open} autoHideDuration={6000} onClose={handleCloseAlert}>
-        <Alert onClose={handleCloseAlert} severity={alert.severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseAlert} severity={alert.severity} sx={{ width: "100%" }}>
           {alert.message}
         </Alert>
       </Snackbar>

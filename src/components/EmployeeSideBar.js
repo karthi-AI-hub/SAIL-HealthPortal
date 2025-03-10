@@ -57,7 +57,6 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
     { text: "Dashboard", icon: <Home />, path: "/employee/dashboard" },
     { text: "Profile", icon: <Person />, path: "/employee/profile" },
     { text: "Doctors", icon: <LocalHospital />, path: "/employee/doctorslist" },
-    { text: "Reports", icon: <Assignment />, path: "/employee/reports" },
     { text: "Appointments", icon: <CalendarMonth />, path: "/employee/appointments" },
   ];
 

@@ -22,8 +22,9 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
-import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, updateDoc, deleteField } from "firebase/firestore";
 import { Email, Phone, Close, Save, Cancel, Add, Delete } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
@@ -36,35 +37,31 @@ const TechnicianProfileEdit = ({ open, onClose, technicianId }) => {
   const [newFieldDialogOpen, setNewFieldDialogOpen] = useState(false);
   const [newFieldKey, setNewFieldKey] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
+  const [saving, setSaving] = useState(false);
   const db = getFirestore();
 
   useEffect(() => {
     if (technicianId) {
-      fetchTechnicianData();
+      const unsubscribe = onSnapshot(doc(db, "Technicians", technicianId), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          delete data.LastLogin;
+          delete data.CreatedAt;
+          setTechnicianData(data);
+          setFormData(data);
+          setLoading(false);
+        } else {
+          setError("No data found for the technician.");
+          setLoading(false);
+        }
+      }, (err) => {
+        setError("Failed to fetch technician data. Please try again later.");
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
     }
   }, [technicianId]);
-
-  const fetchTechnicianData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const docRef = doc(db, "Technicians", technicianId);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        delete data.LastLogin;
-        delete data.CreatedAt;
-        setTechnicianData(data);
-        setFormData(data);
-      } else {
-        setError("No data found for the technician.");
-      }
-    } catch (err) {
-      setError("Failed to fetch technician data. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -84,13 +81,26 @@ const TechnicianProfileEdit = ({ open, onClose, technicianId }) => {
     }
   };
 
-  const handleDeleteField = (key) => {
-    const updatedData = { ...formData };
-    delete updatedData[key];
-    setFormData(updatedData);
+  const handleDeleteField = async (key) => {
+    try {
+      const docRef = doc(db, "Technicians", technicianId);
+      await updateDoc(docRef, {
+        [key]: deleteField(),
+      });
+
+      const updatedData = { ...formData };
+      delete updatedData[key];
+      setFormData(updatedData);
+
+      setAlert({ open: true, message: "Field deleted successfully!", severity: "success" });
+    } catch (err) {
+      setError("Failed to delete field. Please try again later.");
+      setAlert({ open: true, message: "Failed to delete field.", severity: "error" });
+    }
   };
 
   const handleSave = async () => {
+    setSaving(true);
     try {
       const docRef = doc(db, "Technicians", technicianId);
       await updateDoc(docRef, formData);
@@ -100,6 +110,8 @@ const TechnicianProfileEdit = ({ open, onClose, technicianId }) => {
     } catch (err) {
       setError("Failed to update data. Please try again later.");
       setAlert({ open: true, message: "Failed to save data.", severity: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -172,7 +184,7 @@ const TechnicianProfileEdit = ({ open, onClose, technicianId }) => {
                     fullWidth
                     variant="outlined"
                     size="small"
-                    disabled={key === "Email" || key === "Department"}
+                    disabled={key === "Email" || key === "Phone"}
                   />
                 </TableCell>
               </TableRow>
@@ -250,10 +262,10 @@ const TechnicianProfileEdit = ({ open, onClose, technicianId }) => {
             <Add />
           </IconButton>
         </Tooltip>
-        <Button onClick={handleSave} color="primary" startIcon={<Save />}>
+        <Button onClick={handleSave} color="primary" startIcon={saving ? <CircularProgress size={20} /> : <Save />} disabled={saving}>
           Save
         </Button>
-        <Button onClick={onClose} color="secondary" startIcon={<Cancel />}>
+        <Button onClick={onClose} color="secondary" startIcon={<Cancel />} disabled={saving}>
           Cancel
         </Button>
       </DialogActions>

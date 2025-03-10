@@ -21,7 +21,7 @@ import EmployeeProfileView from "../../components/EmployeeProfileView";
 import EmployeeProfileEdit from "../../components/EmployeeProfileEdit";
 import { useDoctor } from "../../context/DoctorContext";
 
-const DoctorPatients = () => {
+const TechnicianPatients = () => {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatientId, setSelectedPatientId] = useState(null);
@@ -80,7 +80,7 @@ const DoctorPatients = () => {
   };
 
   const handleViewReports = (patientId) => {
-    navigate(`/doctor/dashboard?patientId=${patientId}`);
+    navigate(`/technician/dashboard?patientId=${patientId}`);
   };
 
   const filteredPatients = patients.filter((patient) => {
@@ -250,4 +250,4 @@ const DoctorPatients = () => {
   );
 };
 
-export default DoctorPatients;
+export default TechnicianPatients;
