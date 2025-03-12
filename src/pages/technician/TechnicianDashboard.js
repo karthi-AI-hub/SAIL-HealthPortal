@@ -19,6 +19,12 @@ import {
   Tabs,
   Tab,
   Chip,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import {
   Search,
@@ -28,20 +34,17 @@ import {
   Person,
   Group,
   Upload,
-  Archive,
-  Add,
-  Clear,
+    Clear,
 } from "@mui/icons-material";
 import { getReports } from "../../Utils/getReports";
 import { saveAs } from "file-saver";
 import { motion } from "framer-motion";
 import ReportUploadDialog from "../../Utils/ReportUploadDialog";
-import AddFamilyMemberDialog from "../../components/AddFamilyMemberDialog";
 import EmptyState from "../../components/EmptyState";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useLocation } from "react-router-dom";
-
+import { useTechnician } from "../../context/TechnicianContext";
 
 const TechnicianDashboard = () => {
   const [patientId, setPatientId] = useState("");
@@ -54,15 +57,18 @@ const TechnicianDashboard = () => {
   const [familyData, setFamilyData] = useState([]);
   const [selectedTab, setSelectedTab] = useState("You");
   const [reportTypeTab, setReportTypeTab] = useState("all");
+  const [subTab, setSubTab] = useState("Hematology");
   const [patientExists, setPatientExists] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [newFamilyMemberDialogOpen, setNewFamilyMemberDialogOpen] = useState(false);
-  const [savingFamilyMember, setSavingFamilyMember] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
+  const { technicianId } = useTechnician();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -244,32 +250,32 @@ const TechnicianDashboard = () => {
     handleMenuClose();
   };
 
-  const handleArchive = async () => {
-      try {
-        const response = await fetch("https://sail-backend.onrender.com/archive-report", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name: selectedReport.name }),
-        });
-  
-        if (!response.ok) {
-          throw new Error("Failed to archive report");
-        }
-  
-        setReports(reports.filter((report) => report.name !== selectedReport.name));
-        setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
-        setSnackbarMessage("Report archived successfully!");
-        setSnackbarOpen(true);
-      } catch (error) {
-        console.error("Error archiving report:", error);
-        setSnackbarMessage("Error archiving report: " + error.message);
-        setSnackbarOpen(true);
-      }
-      handleMenuClose();
-    };
-  
+  // const handleArchive = async () => {
+  //   try {
+  //     const response = await fetch("https://sail-backend.onrender.com/archive-report", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ name: selectedReport.name }),
+  //     });
+
+  //     if (!response.ok) {
+  //       throw new Error("Failed to archive report");
+  //     }
+
+  //     setReports(reports.filter((report) => report.name !== selectedReport.name));
+  //     setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
+  //     setSnackbarMessage("Report archived successfully!");
+  //     setSnackbarOpen(true);
+  //   } catch (error) {
+  //     console.error("Error archiving report:", error);
+  //     setSnackbarMessage("Error archiving report: " + error.message);
+  //     setSnackbarOpen(true);
+  //   }
+  //   handleMenuClose();
+  // };
+
   const handleView = async (e, report) => {
     e.preventDefault();
     try {
@@ -301,7 +307,16 @@ const TechnicianDashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
+    if (newValue === "LAB") {
+      setSubTab("Hematology");
+    }
     fetchReports(newValue === "You" ? patientId : newValue);
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : null);
+  };
+
+  const handleSubTabChange = (event, newValue) => {
+    setSubTab(newValue);
+    filterReports(reports, "LAB", newValue);
   };
 
   const handleReportTypeTabChange = (event, newValue) => {
@@ -309,9 +324,11 @@ const TechnicianDashboard = () => {
     filterReports(reports, newValue);
   };
 
-  const filterReports = (reports, reportType) => {
+  const filterReports = (reports, reportType, subtype) => {
     if (reportType === "all") {
-      setFilteredReports(reports.filter((report) => report.department !== "ARCHIVED"));
+      setFilteredReports(reports.filter((report) => report.department !== "DELETED"));
+    } else if (reportType === "LAB" && subtype) {
+      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
     } else {
       setFilteredReports(reports.filter((report) => report.department === reportType));
     }
@@ -333,25 +350,6 @@ const TechnicianDashboard = () => {
     }
   };
 
-  const handleAddFamilyMember = () => {
-    setNewFamilyMemberDialogOpen(true);
-    setSelectedTab("You");
-  };
-
-  const handleFamilyMemberDialogClose = () => {
-    setNewFamilyMemberDialogOpen(false);
-    setSelectedTab("You");
-    fetchReports(patientId);
-  };
-
-  const handleFamilyMemberAdded = async () => {
-    setSavingFamilyMember(true);
-    await fetchFamilyData(patientId);
-    setSelectedTab("You");
-    fetchReports(patientId);
-    setSavingFamilyMember(false);
-  };
-
   const handleClearSearch = () => {
     setPatientId("");
     setReports([]);
@@ -360,15 +358,59 @@ const TechnicianDashboard = () => {
     setError("");
   };
 
-  const renderSkeletons = () => (
-    <Grid container spacing={3}>
-      {[1, 2, 3].map((item) => (
-        <Grid item xs={12} sm={6} md={4} key={item}>
-          <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 2 }} />
-        </Grid>
-      ))}
-    </Grid>
-  );
+  const handleDelete = async () => {
+    setDeleteLoading(true);
+    try {
+      if (!technicianId) {
+        throw new Error("Technician ID not found");
+      }
+
+      const timestamp = new Date().toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+        hour12: false,
+      });
+
+      const response = await fetch("http://localhost:3001/delete-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: selectedReport.name,
+          technicianId,
+          timestamp,
+          reason: deleteReason,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete report");
+      }
+
+      setReports(reports.filter((report) => report.name !== selectedReport.name));
+      setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
+      setSnackbarMessage("Report deleted successfully!");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      setSnackbarMessage("Error deleting report: " + error.message);
+      setSnackbarOpen(true);
+    } finally {
+      setDeleteLoading(false);
+    }
+    handleMenuClose();
+    setDeleteDialogOpen(false);
+  };
+
+  // const renderSkeletons = () => (
+  //   <Grid container spacing={3}>
+  //     {[1, 2, 3].map((item) => (
+  //       <Grid item xs={12} sm={6} md={4} key={item}>
+  //         <Skeleton variant="rectangular" height={150} sx={{ borderRadius: 2 }} />
+  //       </Grid>
+  //     ))}
+  //   </Grid>
+  // );
 
   const renderTabs = () => (
     <Tabs
@@ -407,23 +449,6 @@ const TechnicianDashboard = () => {
           sx={{ minHeight: 48, py: 0.5 }}
         />
       ))}
-      <Tab
-      label={
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Add sx={{ mr: 1, fontSize: "1.2rem" }} />
-          <Typography variant="body2">Add Member</Typography>
-        </Box>
-      }
-      value="addMember"
-      onClick={handleAddFamilyMember}
-      sx={{ 
-        minHeight: 48, 
-        py: 0.5,
-        "&:hover": {
-          backgroundColor: theme.palette.action.hover,
-        },
-      }}
-    />
   </Tabs>
 );
 
@@ -542,7 +567,7 @@ const TechnicianDashboard = () => {
               }
             }}
           >
-            {['all', 'BLOOD', 'SUGAR', 'BP', 'ECG', 'SCAN', 'X-RAY', 'OTHERS', 'ARCHIVED'].map((type) => (
+            {['all', 'LAB', 'ECG', 'SCAN', 'X-RAY', 'PHARMACY', 'OTHERS'].map((type) => (
               <Tab
                 key={type}
                 label={type === 'all' ? 'All' : type}
@@ -552,6 +577,17 @@ const TechnicianDashboard = () => {
             ))}
           </Tabs>
 
+          {reportTypeTab === "LAB" && (
+  <Collapse in={reportTypeTab === "LAB"} timeout="auto" unmountOnExit>
+    <Box sx={{ mt: 2, p: 1 }}>
+      <Tabs value={subTab} onChange={handleSubTabChange} variant="scrollable" scrollButtons="auto">
+        {["Hematology", "Biochemistry", "Microbiology", "Bloodbank"].map((sub) => (
+          <Tab key={sub} label={sub} value={sub} />
+        ))}
+      </Tabs>
+    </Box>
+  </Collapse>
+)}
           {filteredReports.length === 0 ? (
             <EmptyState 
               title="No Reports Found"
@@ -643,8 +679,8 @@ const TechnicianDashboard = () => {
         <MenuItem onClick={handleShare}>
           <Share sx={{ mr: 1 }} /> Share
         </MenuItem>
-        <MenuItem onClick={handleArchive}>
-          <Archive sx={{ mr: 1 }} /> Archive
+        <MenuItem onClick={() => setDeleteDialogOpen(true)} sx={{ color : 'red'}}>
+          <Clear sx={{ mr: 1 }} /> Delete
         </MenuItem>
       </Menu>
 
@@ -655,20 +691,14 @@ const TechnicianDashboard = () => {
         message={snackbarMessage}
       />
 
-      <ReportUploadDialog
-        open={uploadDialogOpen}
-        onClose={handleUploadDialogClose}
-        patientId={selectedTab === "You" ? patientId : selectedTab}
-        department={reportTypeTab === "all" ? "OTHERS" : reportTypeTab}
-      />
+  <ReportUploadDialog
+  open={uploadDialogOpen}
+  onClose={handleUploadDialogClose}
+  patientId={selectedTab === "You" ? patientId : selectedTab}
+  department={reportTypeTab === "all" ? "OTHERS" : reportTypeTab}
+  subDepartment={reportTypeTab === "LAB" ? subTab : null}
+  />
 
-      <AddFamilyMemberDialog
-        open={newFamilyMemberDialogOpen}
-        onClose={handleFamilyMemberDialogClose}
-        employeeId={patientId}
-        onFamilyMemberAdded={handleFamilyMemberAdded}
-        saving={savingFamilyMember}
-      />
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}
@@ -692,11 +722,38 @@ const TechnicianDashboard = () => {
         </Alert>
       </Snackbar>
 
-      {savingFamilyMember && (
-        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", my: 4 }}>
-          <CircularProgress />
-        </Box>
-      )}
+      <Dialog
+  open={deleteDialogOpen}
+  onClose={() => setDeleteDialogOpen(false)}
+  aria-labelledby="delete-dialog-title"
+  aria-describedby="delete-dialog-description"
+>
+  <DialogTitle id="delete-dialog-title">Delete Report</DialogTitle>
+  <DialogContent>
+    <DialogContentText id="delete-dialog-description">
+      Please provide a reason for deleting this report:
+    </DialogContentText>
+    <TextField
+      autoFocus
+      margin="dense"
+      id="deleteReason"
+      label="Reason"
+      type="text"
+      fullWidth
+      variant="standard"
+      value={deleteReason}
+      onChange={(e) => setDeleteReason(e.target.value)}
+      disabled={deleteLoading}
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading}>Cancel</Button>
+    <Button onClick={handleDelete} color="error" disabled={deleteLoading}>
+      {deleteLoading ? <CircularProgress size={24} /> : "Delete"}
+    </Button>
+  </DialogActions>
+</Dialog>
+
     </Box>
   );
 };

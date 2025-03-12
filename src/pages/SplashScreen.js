@@ -4,7 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import logo from "../assets/logo.png";
 import { Person, MedicalServices, Engineering } from "@mui/icons-material";
 import { Card, CardContent, Typography, Box, Container } from "@mui/material";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 import { useEmployee } from "../context/EmployeeContext";
 import { useDoctor } from "../context/DoctorContext";
 import { useTechnician } from "../context/TechnicianContext";
@@ -15,15 +15,15 @@ const SplashScreen = () => {
   const { doctorId } = useDoctor();
   const { technicianId } = useTechnician();
 
-  useEffect(() => {
-    if (employeeId) {
-      navigate('/employee/dashboard');
-    } else if (doctorId) {
-      navigate('/doctor/dashboard');
-    } else if (technicianId) {
-      navigate('/technician/dashboard');
-    }
-  }, [employeeId, doctorId, technicianId]);
+  // useEffect(() => {
+  //   if (employeeId) {
+  //     navigate('/');
+  //   } else if (doctorId) {
+  //     navigate('/');
+  //   } else if (technicianId) {
+  //     navigate('');
+  //   }
+  // }, [employeeId, doctorId, technicianId]);
 
   return (
     <Box
