@@ -370,7 +370,7 @@ const TechnicianDashboard = () => {
         hour12: false,
       });
 
-      const response = await fetch("http://localhost:3001/delete-report", {
+      const response = await fetch("https://sail-backend.onrender.com/delete-report", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
