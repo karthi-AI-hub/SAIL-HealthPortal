@@ -15,8 +15,11 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
       setLoading(true);
       try {
         const date = new Date().toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
           timeZone: "Asia/Kolkata",
-        }).replace(/\//g, "-");
+        }).replace(/-/g, "/");
 
         const time = new Date().toLocaleTimeString("en-IN", {
           timeZone: "Asia/Kolkata",
@@ -63,12 +66,12 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
       <DialogTitle>Upload Report</DialogTitle>
       <DialogContent>
         <Box sx={{ mt: 2 }}>
-          <Button variant="contained" component="label" disabled={loading}>
+          <Button sx={{mb: 2}} variant="contained" component="label" disabled={loading}>
             Choose File
             <input type="file" hidden onChange={handleFileChange} />
           </Button>
           <TextField
-            autoFocus
+            sx={{ mt: 2 }}
             margin="dense"
             label="Notes (optional)"
             fullWidth

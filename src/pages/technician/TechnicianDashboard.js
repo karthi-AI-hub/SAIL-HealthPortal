@@ -13,7 +13,6 @@ import {
   Menu,
   MenuItem,
   Button,
-  Skeleton,
   Paper,
   Snackbar,
   Tabs,
@@ -34,7 +33,7 @@ import {
   Person,
   Group,
   Upload,
-    Clear,
+  Clear,
 } from "@mui/icons-material";
 import { getReports } from "../../Utils/getReports";
 import { saveAs } from "file-saver";
@@ -467,6 +466,7 @@ const TechnicianDashboard = () => {
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={8} md={9}>
             <TextField
+              autoFocus
               fullWidth
               variant="outlined"
               placeholder="Enter Patient ID"
@@ -567,7 +567,7 @@ const TechnicianDashboard = () => {
               }
             }}
           >
-            {['all', 'LAB', 'ECG', 'SCAN', 'X-RAY', 'PHARMACY', 'OTHERS'].map((type) => (
+            {['all', 'LAB', 'ECG', 'SCAN', 'XRAY', 'PHARMACY', 'OTHERS'].map((type) => (
               <Tab
                 key={type}
                 label={type === 'all' ? 'All' : type}
@@ -639,12 +639,19 @@ const TechnicianDashboard = () => {
                             >
                               {report.name}
                             </Typography>
-                             <Typography variant="body2" color="text.secondary">
-                               File Size : {report.size} KB
-                            </Typography>
+                           
                             <Typography variant="body2" color="text.secondary">
                                Uploaded  : {report.uploadDate}
                             </Typography>
+                            {report.notes ? (
+                             <Typography variant="body2" color="text.secondary">
+                               Notes : {report.notes}
+                            </Typography>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                               &nbsp;
+                            </Typography>
+                            )}
                             <Chip
                               label={report.department}
                               size="small"
