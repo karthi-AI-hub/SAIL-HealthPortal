@@ -19,14 +19,19 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
           month: "2-digit",
           year: "numeric",
           timeZone: "Asia/Kolkata",
-        }).replace(/-/g, "/");
+        }).replace(/\//g, ":");
 
         const time = new Date().toLocaleTimeString("en-IN", {
           timeZone: "Asia/Kolkata",
           hour12: false,
-        }).slice(0, 5);
+        }).slice(0, 5).replace(/:/g, ":");
 
-        const fileName = `${patientId}-${department}-${date}-${time}`;
+        let fileName;
+        if (subDepartment) {
+          fileName = `${patientId}-${subDepartment}-${date}-${time}`;
+        } else {
+          fileName = `${patientId}-${department}-${date}-${time}`;
+        }
 
         const formData = new FormData();
         formData.append("file", file);
