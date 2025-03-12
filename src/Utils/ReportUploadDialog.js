@@ -2,25 +2,39 @@ import React, { useState } from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography, CircularProgress } from "@mui/material";
 
 const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartment }) => {
-  const [reportName, setReportName] = useState("");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [reportNotes, setReportNotes] = useState("");
 
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
   };
 
   const handleUpload = async () => {
-    if (reportName && file) {
+    if (file) {
       setLoading(true);
       try {
+        const date = new Date().toLocaleDateString("en-IN", {
+          timeZone: "Asia/Kolkata",
+        }).replace(/\//g, "-");
+
+        const time = new Date().toLocaleTimeString("en-IN", {
+          timeZone: "Asia/Kolkata",
+          hour12: false,
+        }).slice(0, 5);
+
+        const fileName = `${patientId}-${department}-${date}-${time}`;
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("patientId", patientId);
-        formData.append("fileName", reportName);
+        formData.append("fileName", fileName);
         formData.append("department", department);
         if (subDepartment) {
           formData.append("subDepartment", subDepartment);
+        }
+        if (reportNotes) {
+          formData.append("notes", reportNotes);
         }
 
         const response = await fetch("https://sail-backend.onrender.com/upload-report", {
@@ -48,25 +62,25 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
     <Dialog open={open} onClose={() => onClose(false)}>
       <DialogTitle>Upload Report</DialogTitle>
       <DialogContent>
-        <TextField
-          autoFocus
-          margin="dense"
-          label="Report Name"
-          fullWidth
-          value={reportName}
-          onChange={(e) => setReportName(e.target.value)}
-        />
         <Box sx={{ mt: 2 }}>
           <Button variant="contained" component="label" disabled={loading}>
             Choose File
             <input type="file" hidden onChange={handleFileChange} />
           </Button>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Notes (optional)"
+            fullWidth
+            value={reportNotes}
+            onChange={(e) => setReportNotes(e.target.value)}
+          />
           {file && <Typography variant="body2" sx={{ mt: 1 }}>{file.name}</Typography>}
         </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={() => onClose(false)} disabled={loading}>Cancel</Button>
-        <Button onClick={handleUpload} disabled={!reportName || !file || loading}>
+        <Button onClick={handleUpload} disabled={!file || loading}>
           {loading ? <CircularProgress size={24} /> : 'Upload'}
         </Button>
       </DialogActions>
