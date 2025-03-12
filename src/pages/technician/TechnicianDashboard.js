@@ -358,16 +358,19 @@ const TechnicianDashboard = () => {
   };
 
   const handleDelete = async () => {
+if (!deleteReason) {
+      setSnackbarMessage("Please provide a reason for deleting the report.");
+      setSnackbarOpen(true);
+      return;
+    }
+  
     setDeleteLoading(true);
     try {
       if (!technicianId) {
         throw new Error("Technician ID not found");
       }
 
-      const timestamp = new Date().toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        hour12: false,
-      });
+      const timestamp = new Date().toISOString();
 
       const response = await fetch("https://sail-backend.onrender.com/delete-report", {
         method: "POST",
@@ -401,7 +404,7 @@ const TechnicianDashboard = () => {
     setDeleteDialogOpen(false);
   };
 
-  // const renderSkeletons = () => (
+  // const renderSkeletons () => (
   //   <Grid container spacing={3}>
   //     {[1, 2, 3].map((item) => (
   //       <Grid item xs={12} sm={6} md={4} key={item}>
@@ -755,7 +758,7 @@ const TechnicianDashboard = () => {
   </DialogContent>
   <DialogActions>
     <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading}>Cancel</Button>
-    <Button onClick={handleDelete} color="error" disabled={deleteLoading}>
+    <Button onClick={handleDelete} color="error" disabled={deleteLoading || !deleteReason}>
       {deleteLoading ? <CircularProgress size={24} /> : "Delete"}
     </Button>
   </DialogActions>
