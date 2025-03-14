@@ -18,6 +18,12 @@ import {
   Tabs,
   Tab,
   Chip,
+  Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import {
   Search,
@@ -27,7 +33,6 @@ import {
   Person,
   Group,
   Clear,
-  Archive,
 } from "@mui/icons-material";
 import { getReports } from "../../Utils/getReports";
 import { saveAs } from "file-saver";
@@ -36,6 +41,7 @@ import EmptyState from "../../components/EmptyState";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useLocation } from "react-router-dom";
+import { useDoctor } from "../../context/DoctorContext";
 
 const DoctorDashboard = () => {
   const [patientId, setPatientId] = useState("");
@@ -48,16 +54,24 @@ const DoctorDashboard = () => {
   const [familyData, setFamilyData] = useState([]);
   const [selectedTab, setSelectedTab] = useState("You");
   const [reportTypeTab, setReportTypeTab] = useState("all");
+  const [subTab, setSubTab] = useState("Hematology");
   const [patientExists, setPatientExists] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteReason, setDeleteReason] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [reportInstructions, setReportInstructions] = useState({});
+  const [newInstruction, setNewInstruction] = useState("");
+  const [instructionDialogOpen, setInstructionDialogOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
+  const { doctorId } = useDoctor();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const patientIdFromUrl = params.get("patientId");
+    const patientIdFromUrl = params.get("employeeID");
     if (patientIdFromUrl) {
       setPatientId(patientIdFromUrl);
       handleSearch(patientIdFromUrl);
@@ -111,7 +125,7 @@ const DoctorDashboard = () => {
   const handleSearch = async (id) => {
     const searchId = id || patientId;
     if (!searchId) {
-      setError("Please enter a Patient ID.");
+      setError("Please enter a Employee ID.");
       return;
     }
 
@@ -126,7 +140,7 @@ const DoctorDashboard = () => {
         await fetchFamilyData(searchId);
         await fetchReports(searchId);
       } else {
-        setError("Patient ID does not exist.");
+        setError("Employee ID does not exist.");
         setFamilyData([]);
         setReports([]);
         setFilteredReports([]);
@@ -154,6 +168,7 @@ const DoctorDashboard = () => {
   const handleMenuOpen = (event, report) => {
     setAnchorEl(event.currentTarget);
     setSelectedReport(report);
+    setReportInstructions(report.instructions || []);
   };
 
   const handleMenuClose = () => {
@@ -235,31 +250,31 @@ const DoctorDashboard = () => {
     handleMenuClose();
   };
 
-  const handleArchive = async () => {
-      try {
-        const response = await fetch("https://sail-backend.onrender.com/archive-report", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ name: selectedReport.name }),
-        });
+  // const handleArchive = async () => {
+  //     try {
+  //       const response = await fetch("https://sail-backend.onrender.com/archive-report", {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //         body: JSON.stringify({ name: selectedReport.name }),
+  //       });
   
-        if (!response.ok) {
-          throw new Error("Failed to archive report");
-        }
+  //       if (!response.ok) {
+  //         throw new Error("Failed to archive report");
+  //       }
   
-        setReports(reports.filter((report) => report.name !== selectedReport.name));
-        setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
-        setSnackbarMessage("Report archived successfully!");
-        setSnackbarOpen(true);
-      } catch (error) {
-        console.error("Error archiving report:", error);
-        setSnackbarMessage("Error archiving report: " + error.message);
-        setSnackbarOpen(true);
-      }
-      handleMenuClose();
-    };
+  //       setReports(reports.filter((report) => report.name !== selectedReport.name));
+  //       setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
+  //       setSnackbarMessage("Report archived successfully!");
+  //       setSnackbarOpen(true);
+  //     } catch (error) {
+  //       console.error("Error archiving report:", error);
+  //       setSnackbarMessage("Error archiving report: " + error.message);
+  //       setSnackbarOpen(true);
+  //     }
+  //     handleMenuClose();
+  //   };
   
   const handleView = async (e, report) => {
     e.preventDefault();
@@ -292,17 +307,37 @@ const DoctorDashboard = () => {
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
+    if (newValue === "LAB") {
+      setSubTab("Hematology");
+    } else if (newValue === "PHARMACY") {
+      setSubTab("InPharmacy");
+    }
     fetchReports(newValue === "You" ? patientId : newValue);
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : newValue === "PHARMACY" ? "InPharmacy" : null);
+  };
+
+  const handleSubTabChange = (event, newValue) => {
+    setSubTab(newValue);
+    filterReports(reports, reportTypeTab, newValue);
   };
 
   const handleReportTypeTabChange = (event, newValue) => {
     setReportTypeTab(newValue);
-    filterReports(reports, newValue);
+    if (newValue === "LAB") {
+      setSubTab("Hematology");
+    } else if (newValue === "PHARMACY") {
+      setSubTab("InPharmacy");
+    }
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : newValue === "PHARMACY" ? "InPharmacy" : null);
   };
 
-  const filterReports = (reports, reportType) => {
+  const filterReports = (reports, reportType, subtype) => {
     if (reportType === "all") {
-      setFilteredReports(reports.filter((report) => report.department !== "ARCHIVED"));
+      setFilteredReports(reports.filter((report) => report.department !== "DELETED"));
+    } else if (reportType === "LAB" && subtype) {
+      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
+    } else if (reportType === "PHARMACY" && subtype) {
+      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
     } else {
       setFilteredReports(reports.filter((report) => report.department === reportType));
     }
@@ -318,6 +353,95 @@ const DoctorDashboard = () => {
     setFamilyData([]);
     setPatientExists(false);
     setError("");
+  };
+
+  const handleAddInstruction = async (reportId) => {
+    try {
+      const timestamp = new Date().toISOString();
+      const instruction = {
+        text: newInstruction,
+        doctorId,
+        timestamp,
+      };
+  
+      const response = await fetch("https://sail-backend.onrender.com/add-instruction", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reportId,
+          instruction,
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error("Failed to add instruction");
+      }
+  
+      const updatedInstructions = await response.json();
+  
+      setReportInstructions((prev) => ({
+        ...prev,
+        [reportId]: updatedInstructions,
+      }));
+  
+      setNewInstruction("");
+      setInstructionDialogOpen(false);
+      setSnackbarMessage("Instruction added successfully!");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error adding instruction:", error);
+      setSnackbarMessage("Error adding instruction: " + error.message);
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteReason) {
+      setSnackbarMessage("Please provide a reason for deleting the report.");
+      setSnackbarOpen(true);
+      return;
+    }
+  
+    setDeleteLoading(true);
+    try {
+      if (!doctorId) {
+        throw new Error("Technician ID not found");
+      }
+
+      const timestamp = new Date().toISOString();
+
+      const response = await fetch("https://sail-backend.onrender.com/delete-report", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: selectedReport.name,
+          doctorId,
+          timestamp,
+          reason: deleteReason,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete report");
+      }
+
+      setReports(reports.filter((report) => report.name !== selectedReport.name));
+      setFilteredReports(filteredReports.filter((report) => report.name !== selectedReport.name));
+      setSnackbarMessage("Report deleted successfully!");
+      setSnackbarOpen(true);
+    } catch (error) {
+      console.error("Error deleting report:", error);
+      setSnackbarMessage("Error deleting report: " + error.message);
+      setSnackbarOpen(true);
+    } finally {
+      setDeleteLoading(false);
+    }
+    handleMenuClose();
+    setDeleteDialogOpen(false);
   };
 
   const renderTabs = () => (
@@ -377,7 +501,7 @@ const DoctorDashboard = () => {
             <TextField
               fullWidth
               variant="outlined"
-              placeholder="Enter Patient ID"
+              placeholder="Enter Employee ID"
               value={patientId}
               onChange={handleSearchChange}
               InputProps={{
@@ -445,7 +569,7 @@ const DoctorDashboard = () => {
             scrollButtons="auto"
             allowScrollButtonsMobile
             sx={{
-              mb: 3,
+              mb: 1,
               '& .MuiTab-root': {
                 minWidth: 'unset',
                 px: 2,
@@ -459,7 +583,7 @@ const DoctorDashboard = () => {
               }
             }}
           >
-            {['all', 'BLOOD', 'SUGAR', 'BP', 'ECG', 'SCAN', 'X-RAY', 'OTHERS', 'ARCHIVED'].map((type) => (
+            {['all', 'LAB', 'ECG', 'SCAN', 'XRAY', 'PHARMACY', 'OTHERS'].map((type) => (
               <Tab
                 key={type}
                 label={type === 'all' ? 'All' : type}
@@ -469,6 +593,67 @@ const DoctorDashboard = () => {
             ))}
           </Tabs>
 
+          {reportTypeTab === "LAB" && (
+  <Collapse in={reportTypeTab === "LAB"} timeout="auto" unmountOnExit>
+    <Box sx={{ mt: 1, p: 1 }}>
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{
+          '& .MuiTab-root': {
+            minWidth: 'unset',
+            px: 2,
+            mx: 0.5,
+            borderRadius: 50,
+            bgcolor: 'action.hover',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText'
+            }
+          }
+        }}
+      >
+        {["Hematology", "Biochemistry", "Microbiology", "Bloodbank"].map((sub) => (
+          <Tab key={sub} label={sub} value={sub} />
+        ))}
+      </Tabs>
+    </Box>
+  </Collapse>
+)}
+
+{reportTypeTab === "PHARMACY" && (
+  <Collapse in={reportTypeTab === "PHARMACY"} timeout="auto" unmountOnExit>
+    <Box sx={{ mt: 1, p: 1 }}>
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{
+          '& .MuiTab-root': {
+            minWidth: 'unset',
+            px: 2,
+            mx: 0.5,
+            borderRadius: 50,
+            bgcolor: 'action.hover',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText'
+            }
+          }
+        }}
+      >
+        {["InPharmacy", "OutPharmacy"].map((sub) => (
+          <Tab key={sub} label={sub} value={sub} />
+        ))}
+      </Tabs>
+    </Box>
+  </Collapse>
+)}
           {filteredReports.length === 0 ? (
             <EmptyState 
               title="No Reports Found"
@@ -521,11 +706,17 @@ const DoctorDashboard = () => {
                               {report.name}
                             </Typography>
                              <Typography variant="body2" color="text.secondary">
-                               File Size : {report.size} KB
+                                Uploaded  : {report.uploadDate}                             
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                               Uploaded  : {report.uploadDate}
+                            {report.notes ? (
+                             <Typography variant="body2" color="text.secondary">
+                               Notes : {report.notes}
                             </Typography>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                               &nbsp;
+                            </Typography>
+                            )}
                             <Chip
                               label={report.department}
                               size="small"
@@ -535,6 +726,16 @@ const DoctorDashboard = () => {
                                 color: 'primary.contrastText'
                               }}
                             />
+                            {reportInstructions[report.id]?.map((instruction, index) => (
+              <Box key={index} sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {instruction.text}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {new Date(instruction.timestamp).toLocaleString()} by {instruction.doctorId}
+                </Typography>
+              </Box>
+            ))}
                           </Box>
                           <IconButton 
                             onClick={(event) => handleMenuOpen(event, report)}
@@ -560,8 +761,11 @@ const DoctorDashboard = () => {
         <MenuItem onClick={handleShare}>
           <Share sx={{ mr: 1 }} /> Share
         </MenuItem>
-        <MenuItem onClick={handleArchive}>
-          <Archive sx={{ mr: 1 }} /> Archive
+        <MenuItem onClick={() => setInstructionDialogOpen(true)}>
+          <Person sx={{ mr: 1 }} /> Add Instruction
+        </MenuItem>
+        <MenuItem onClick={() => setDeleteDialogOpen(true)} sx={{ color : 'red'}}>
+          <Clear sx={{ mr: 1 }} /> Delete
         </MenuItem>
       </Menu>
 
@@ -594,7 +798,68 @@ const DoctorDashboard = () => {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-
+      <Dialog
+  open={instructionDialogOpen}
+  onClose={() => setInstructionDialogOpen(false)}
+  aria-labelledby="instruction-dialog-title"
+  aria-describedby="instruction-dialog-description"
+>
+  <DialogTitle id="instruction-dialog-title">Add Instruction</DialogTitle>
+  <DialogContent>
+    <DialogContentText id="instruction-dialog-description">
+      Please provide the instruction for this report:
+    </DialogContentText>
+    <TextField
+      autoFocus
+      margin="dense"
+      id="newInstruction"
+      label="Instruction"
+      type="text"
+      fullWidth
+      variant="standard"
+      value={newInstruction}
+      onChange={(e) => setNewInstruction(e.target.value)}
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setInstructionDialogOpen(false)}>Cancel</Button>
+    <Button onClick={() => handleAddInstruction(selectedReport.id)} color="primary">
+      Add
+    </Button>
+  </DialogActions>
+</Dialog>
+  
+       <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">Delete Report</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="delete-dialog-description">
+            Please provide a reason for deleting this report:
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="deleteReason"
+            label="Reason"
+            type="text"
+            fullWidth
+            variant="standard"
+            value={deleteReason}
+            onChange={(e) => setDeleteReason(e.target.value)}
+            disabled={deleteLoading}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading}>Cancel</Button>
+          <Button onClick={handleDelete} color="error" disabled={deleteLoading || !deleteReason}>
+            {deleteLoading ? <CircularProgress size={24} /> : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

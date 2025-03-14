@@ -71,7 +71,7 @@ const TechnicianDashboard = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const patientIdFromUrl = params.get("patientId");
+    const patientIdFromUrl = params.get("employeeID");
     if (patientIdFromUrl) {
       setPatientId(patientIdFromUrl);
       handleSearch(patientIdFromUrl);
@@ -125,7 +125,7 @@ const TechnicianDashboard = () => {
   const handleSearch = async (id) => {
     const searchId = id || patientId;
     if (!searchId) {
-      setError("Please enter a Patient ID.");
+      setError("Please enter a Employee ID.");
       return;
     }
 
@@ -140,7 +140,7 @@ const TechnicianDashboard = () => {
         await fetchFamilyData(searchId);
         await fetchReports(searchId);
       } else {
-        setError("Patient ID does not exist.");
+        setError("Employee ID does not exist.");
         setFamilyData([]);
         setReports([]);
         setFilteredReports([]);
@@ -308,19 +308,26 @@ const TechnicianDashboard = () => {
     setSelectedTab(newValue);
     if (newValue === "LAB") {
       setSubTab("Hematology");
+    } else if (newValue === "PHARMACY") {
+      setSubTab("InPharmacy");
     }
     fetchReports(newValue === "You" ? patientId : newValue);
-    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : null);
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : newValue === "PHARMACY" ? "InPharmacy" : null);
   };
 
   const handleSubTabChange = (event, newValue) => {
     setSubTab(newValue);
-    filterReports(reports, "LAB", newValue);
+    filterReports(reports, reportTypeTab, newValue);
   };
 
   const handleReportTypeTabChange = (event, newValue) => {
     setReportTypeTab(newValue);
-    filterReports(reports, newValue);
+    if (newValue === "LAB") {
+      setSubTab("Hematology");
+    } else if (newValue === "PHARMACY") {
+      setSubTab("InPharmacy");
+    }
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : newValue === "PHARMACY" ? "InPharmacy" : null);
   };
 
   const filterReports = (reports, reportType, subtype) => {
@@ -328,12 +335,14 @@ const TechnicianDashboard = () => {
       setFilteredReports(reports.filter((report) => report.department !== "DELETED"));
     } else if (reportType === "LAB" && subtype) {
       setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
+    } else if (reportType === "PHARMACY" && subtype) {
+      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
     } else {
       setFilteredReports(reports.filter((report) => report.department === reportType));
     }
   };
 
-  const handleCloseSnackbar = () => {
+  const handleCloseSnackbar = () => { 
     setSnackbarOpen(false);
   };
 
@@ -358,7 +367,7 @@ const TechnicianDashboard = () => {
   };
 
   const handleDelete = async () => {
-if (!deleteReason) {
+    if (!deleteReason) {
       setSnackbarMessage("Please provide a reason for deleting the report.");
       setSnackbarOpen(true);
       return;
@@ -472,7 +481,7 @@ if (!deleteReason) {
               autoFocus
               fullWidth
               variant="outlined"
-              placeholder="Enter Patient ID"
+              placeholder="Enter Employee ID"
               value={patientId}
               onChange={handleSearchChange}
               InputProps={{
@@ -556,7 +565,7 @@ if (!deleteReason) {
             scrollButtons="auto"
             allowScrollButtonsMobile
             sx={{
-              mb: 3,
+              mb: 1,
               '& .MuiTab-root': {
                 minWidth: 'unset',
                 px: 2,
@@ -582,9 +591,59 @@ if (!deleteReason) {
 
           {reportTypeTab === "LAB" && (
   <Collapse in={reportTypeTab === "LAB"} timeout="auto" unmountOnExit>
-    <Box sx={{ mt: 2, p: 1 }}>
-      <Tabs value={subTab} onChange={handleSubTabChange} variant="scrollable" scrollButtons="auto">
+    <Box sx={{ mt: 1, p: 1 }}>
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{
+          '& .MuiTab-root': {
+            minWidth: 'unset',
+            px: 2,
+            mx: 0.5,
+            borderRadius: 50,
+            bgcolor: 'action.hover',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText'
+            }
+          }
+        }}
+      >
         {["Hematology", "Biochemistry", "Microbiology", "Bloodbank"].map((sub) => (
+          <Tab key={sub} label={sub} value={sub} />
+        ))}
+      </Tabs>
+    </Box>
+  </Collapse>
+)}
+
+{reportTypeTab === "PHARMACY" && (
+  <Collapse in={reportTypeTab === "PHARMACY"} timeout="auto" unmountOnExit>
+    <Box sx={{ mt: 1, p: 1 }}>
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{
+          '& .MuiTab-root': {
+            minWidth: 'unset',
+            px: 2,
+            mx: 0.5,
+            borderRadius: 50,
+            bgcolor: 'action.hover',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText'
+            }
+          }
+        }}
+      >
+        {["InPharmacy", "OutPharmacy"].map((sub) => (
           <Tab key={sub} label={sub} value={sub} />
         ))}
       </Tabs>
@@ -706,7 +765,7 @@ if (!deleteReason) {
   onClose={handleUploadDialogClose}
   patientId={selectedTab === "You" ? patientId : selectedTab}
   department={reportTypeTab === "all" ? "OTHERS" : reportTypeTab}
-  subDepartment={reportTypeTab === "LAB" ? subTab : null}
+  subDepartment={reportTypeTab === "LAB" ? subTab : reportTypeTab === "PHARMACY" ? subTab : null}
   />
 
       <Snackbar

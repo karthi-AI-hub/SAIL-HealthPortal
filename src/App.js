@@ -61,14 +61,14 @@ function App() {
                 <Route element={<PrivateRoute role="doctor"><DoctorLayout /></PrivateRoute>}>
                   <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
                   <Route path="/doctor/profile" element={<DoctorProfile />} />
-                  <Route path="/doctor/patients" element={<DoctorPatients />} />
+                  <Route path="/doctor/employeeList" element={<DoctorPatients />} />
                   <Route path="/doctor/appointments" element={<DoctorAppointments />} />
                 </Route>
 
                 <Route element={<PrivateRoute role="technician"><TechnicianLayout /></PrivateRoute>}>
                   <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
                   <Route path="/technician/profile" element={<TechnicianProfile />} />
-                  <Route path="/technician/patients" element={<TechnicianPatients />} />
+                  <Route path="/technician/employeeList" element={<TechnicianPatients />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

@@ -220,7 +220,7 @@ const TechnicianPatients = () => {
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="Search employees by ID, name, or phone..."
+            placeholder="Search Employees by ID, Name, or phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{
@@ -321,7 +321,7 @@ const TechnicianPatients = () => {
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/technician/dashboard?patientId=${patient.id}`);
+                              navigate(`/technician/dashboard?employeeID=${patient.id}`);
                             }}
                             sx={{
                               backgroundColor: alpha(theme.palette.primary.main, 0.1),

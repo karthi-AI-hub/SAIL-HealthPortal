@@ -55,8 +55,8 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Home />, path: "/doctor/dashboard" },
     { text: "Profile", icon: <Person />, path: "/doctor/profile" },
-    { text: "Patients", icon: <LocalHospital />, path: "/doctor/patients" },
-    { text: "Appointments", icon: <CalendarMonth />, path: "/doctor/appointments" },
+    { text: "Employee", icon: <LocalHospital />, path: "/doctor/employeeList" },
+    // { text: "Appointments", icon: <CalendarMonth />, path: "/doctor/appointments" },
   ];
 
   return (

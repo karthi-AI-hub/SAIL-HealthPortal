@@ -26,7 +26,6 @@ import {
 import {
   Menu as MenuIcon,
   Home,
-  Assignment,
   Person,
   Logout,
   LocalHospital,
@@ -55,7 +54,7 @@ const TechnicianSidebar = ({ technician, isOpen, onMenuClick, setOpen }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Home />, path: "/technician/dashboard" },
     { text: "Profile", icon: <Person />, path: "/technician/profile" },
-    { text: "Patients", icon: <LocalHospital />, path: "/technician/patients"},
+    { text: "Employee", icon: <LocalHospital />, path: "/technician/employeeList"},
   ];
 
   return (
