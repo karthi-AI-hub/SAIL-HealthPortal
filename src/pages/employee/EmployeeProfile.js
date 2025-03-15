@@ -21,12 +21,10 @@ import {
   TableRow,
   Paper,
   Button,	
-  Snackbar,
-  Alert,
   IconButton,
   Tooltip,
 } from "@mui/material";
-import { getFirestore, doc, onSnapshot, collection, getDocs } from "firebase/firestore";
+import { getFirestore, doc, onSnapshot, collection } from "firebase/firestore";
 import { Person, Group, Email, Phone, LocationOn, ErrorOutline, Refresh } from "@mui/icons-material";
 import { motion } from "framer-motion";
 
@@ -358,6 +356,8 @@ const EmployeeProfile = () => {
             const data = doc.data();
             delete data.LastLogin;
             delete data.CreatedAt;
+            delete data.ConditionHistory;
+            delete data.Condition;
             setEmployeeData(data);
             setError(null);
           } else {
@@ -410,6 +410,8 @@ const EmployeeProfile = () => {
             const data = doc.data();
             delete data.LastLogin;
             delete data.CreatedAt;
+            delete data.ConditionHistory;
+            delete data.Condition;
             setEmployeeData(data);
             setError(null);
           } else {

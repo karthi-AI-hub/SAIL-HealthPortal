@@ -24,6 +24,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  FormControl,
+  InputLabel,
+  Select,
 } from "@mui/material";
 import {
   Search,
@@ -64,6 +73,7 @@ const DoctorDashboard = () => {
   const [reportInstructions, setReportInstructions] = useState({});
   const [newInstruction, setNewInstruction] = useState("");
   const [instructionDialogOpen, setInstructionDialogOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState("latest");
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const location = useLocation();
@@ -151,6 +161,18 @@ const DoctorDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSortChange = (event) => {
+    setSortOrder(event.target.value);
+    const sortedReports = [...filteredReports].sort((a, b) => {
+      if (event.target.value === "latest") {
+        return new Date(b.uploadDate) - new Date(a.uploadDate);
+      } else {
+        return new Date(a.uploadDate) - new Date(b.uploadDate);
+      }
+    });
+    setFilteredReports(sortedReports);
   };
 
   const handleSearchChange = (event) => {
@@ -661,140 +683,119 @@ const DoctorDashboard = () => {
               icon="description"
             />
           ) : (
-            <Grid container spacing={2}>
-              {filteredReports.map((report) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={report.name}>
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderRadius: 3,
-                        boxShadow: 1,
-                        '&:hover': {
-                          boxShadow: 4,
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box sx={{ 
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start'
-                        }}>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography
-                              variant="subtitle1"
-                              component="a"
-                              onClick={(e) => handleView(e, report)}
-                              sx={{
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                display: 'block',
-                                mb: 1,
-                                textDecoration: 'none',
-                                color: 'text.primary',
-                                '&:hover': {
-                                  color: 'primary.main',
-                                }
-                              }}
-                            >
-                              {report.name}
-                            </Typography>
-                             <Typography variant="body2" color="text.secondary">
-                                Uploaded  : {report.uploadDate}                             
-                            </Typography>
-                            {report.notes ? (
-                             <Typography variant="body2" color="text.secondary">
-                               Notes : {report.notes}
-                            </Typography>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                               &nbsp;
-                            </Typography>
-                            )}
-                            <Chip
-                              label={report.department}
-                              size="small"
-                              sx={{ 
-                                mt: 2,
-                                bgcolor: 'primary.light',
-                                color: 'primary.contrastText'
-                              }}
-                            />
-                            {reportInstructions[report.id]?.map((instruction, index) => (
+            
+<TableContainer sx={{ mt:5}} component={Paper}>
+  {/* <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+    <FormControl variant="outlined" size="small">
+      <InputLabel>Sort By</InputLabel>
+      <Select
+        value={sortOrder}
+        onChange={handleSortChange}
+        label="Sort By"
+      >
+         <MenuItem value="latest">Latest First</MenuItem>
+         <MenuItem value="oldest">Oldest First</MenuItem>
+      </Select>
+    </FormControl>
+  </Box> */}
+  <Table sx={{ minWidth: 650 }} aria-label="simple table">
+    <TableHead>
+      <TableRow>
+        <TableCell>Report Name</TableCell>
+        <TableCell align="right">Uploaded On</TableCell>
+        <TableCell align="right">Notes</TableCell>
+        <TableCell align="right">Instructions</TableCell>
+        <TableCell align="right">Actions</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {filteredReports.map((report) => (
+        <TableRow
+          key={report.name}
+          sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+        >
+          <TableCell component="th" scope="row">
+            <Typography
+              variant="subtitle1"
+              component="a"
+              onClick={(e) => handleView(e, report)}
+              sx={{
+                cursor: "pointer",
+                fontWeight: 600,
+                display: "block",
+                mb: 1,
+                textDecoration: "none",
+                color: "text.primary",
+                "&:hover": {
+                  color: "primary.main",
+                },
+              }}
+            >
+              {report.name}
+            </Typography>
+          </TableCell>
+          <TableCell align="right">{report.uploadDate}</TableCell>
+          <TableCell align="right">{report.notes || "N/A"}</TableCell>
+          <TableCell align="right">
+            {report.instructions?.map((instruction, index) => (
               <Box key={index} sx={{ mt: 1 }}>
                 <Typography variant="body2" color="text.secondary">
                   {instruction.text}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  {new Date(instruction.timestamp).toLocaleString()} by {instruction.doctorId}
+                  {new Date(instruction.timestamp).toLocaleString()} by{" "}
+                  {instruction.doctorId}
                 </Typography>
               </Box>
             ))}
-                          </Box>
-                          <IconButton 
-                            onClick={(event) => handleMenuOpen(event, report)}
-                            sx={{ ml: 1 }}
-                          >
-                            <MoreVert />
-                          </IconButton>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
+          </TableCell>
+          <TableCell align="right">
+            <IconButton
+              onClick={(event) => handleMenuOpen(event, report)}
+              sx={{ ml: 1 }}
+            >
+              <MoreVert />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
           )}
         </>
       ) : null}
 
-      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        <MenuItem onClick={handleDownload}>
-          <FileDownload sx={{ mr: 1 }} /> Download
-        </MenuItem>
-        <MenuItem onClick={handleShare}>
-          <Share sx={{ mr: 1 }} /> Share
-        </MenuItem>
-        <MenuItem onClick={() => setInstructionDialogOpen(true)}>
-          <Person sx={{ mr: 1 }} /> Add Instruction
-        </MenuItem>
-        <MenuItem onClick={() => setDeleteDialogOpen(true)} sx={{ color : 'red'}}>
-          <Clear sx={{ mr: 1 }} /> Delete
-        </MenuItem>
-      </Menu>
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        message={snackbarMessage}
-      />
+<Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+  <MenuItem onClick={handleDownload}>
+    <FileDownload sx={{ mr: 1 }} /> Download
+  </MenuItem>
+  <MenuItem onClick={handleShare}>
+    <Share sx={{ mr: 1 }} /> Share
+  </MenuItem>
+  <MenuItem onClick={() => setInstructionDialogOpen(true)}>
+    <Person sx={{ mr: 1 }} /> Add Instruction
+  </MenuItem>
+  <MenuItem onClick={() => setDeleteDialogOpen(true)} sx={{ color: "red" }}>
+    <Clear sx={{ mr: 1 }} /> Delete
+  </MenuItem>
+</Menu>
 
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{
-          vertical: isMobile ? 'bottom' : 'top',
-          horizontal: 'center'
+          vertical: isMobile ? "bottom" : "top",
+          horizontal: "center",
         }}
         sx={{
-          '& .MuiSnackbarContent-root': {
+          "& .MuiSnackbarContent-root": {
             borderRadius: 3,
-          }
+          },
         }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity="success"
-          sx={{ width: '100%' }}
-        >
+        <Alert onClose={handleCloseSnackbar} severity="success" sx={{ width: "100%" }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
@@ -816,13 +817,15 @@ const DoctorDashboard = () => {
       label="Instruction"
       type="text"
       fullWidth
-      variant="standard"
+      variant="outlined"
       value={newInstruction}
       onChange={(e) => setNewInstruction(e.target.value)}
     />
   </DialogContent>
   <DialogActions>
-    <Button onClick={() => setInstructionDialogOpen(false)}>Cancel</Button>
+    <Button onClick={() => setInstructionDialogOpen(false)} color="secondary">
+      Cancel
+    </Button>
     <Button onClick={() => handleAddInstruction(selectedReport.id)} color="primary">
       Add
     </Button>
@@ -847,14 +850,16 @@ const DoctorDashboard = () => {
             label="Reason"
             type="text"
             fullWidth
-            variant="standard"
+            variant="outlined"
             value={deleteReason}
             onChange={(e) => setDeleteReason(e.target.value)}
             disabled={deleteLoading}
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading}>Cancel</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={deleteLoading} color="secondary">
+            Cancel
+          </Button>
           <Button onClick={handleDelete} color="error" disabled={deleteLoading || !deleteReason}>
             {deleteLoading ? <CircularProgress size={24} /> : "Delete"}
           </Button>

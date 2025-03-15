@@ -24,6 +24,15 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Select,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
   Search,
@@ -44,6 +53,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useLocation } from "react-router-dom";
 import { useTechnician } from "../../context/TechnicianContext";
+import { format } from 'date-fns';
 
 const TechnicianDashboard = () => {
   const [patientId, setPatientId] = useState("");
@@ -61,6 +71,7 @@ const TechnicianDashboard = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [sortOrder, setSortOrder] = useState("latest");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteReason, setDeleteReason] = useState("");
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -106,13 +117,20 @@ const TechnicianDashboard = () => {
       setError("Please enter a Patient ID.");
       return;
     }
-
+  
     setLoading(true);
     setError("");
     try {
       const data = await getReports(id);
-      setReports(data);
-      filterReports(data, reportTypeTab);
+      const sortedData = data.sort((a, b) => {
+        if (sortOrder === "latest") {
+          return new Date(b.uploadDate) - new Date(a.uploadDate);
+        } else {
+          return new Date(a.uploadDate) - new Date(b.uploadDate);
+        }
+      });
+      setReports(sortedData);
+      filterReports(sortedData, reportTypeTab);
     } catch (err) {
       console.error("Error fetching reports:", err);
       setReports([]);
@@ -120,6 +138,19 @@ const TechnicianDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSortChange = (event) => {
+    setSortOrder(event.target.value);
+    const sortedReports = [...reports].sort((a, b) => {
+      if (event.target.value === "latest") {
+        return new Date(b.uploadDate) - new Date(a.uploadDate);
+      } else {
+        return new Date(a.uploadDate) - new Date(b.uploadDate);
+      }
+    });
+    setReports(sortedReports);
+    filterReports(sortedReports, reportTypeTab);
   };
 
   const handleSearch = async (id) => {
@@ -331,15 +362,18 @@ const TechnicianDashboard = () => {
   };
 
   const filterReports = (reports, reportType, subtype) => {
+    let filtered = [];
     if (reportType === "all") {
-      setFilteredReports(reports.filter((report) => report.department !== "DELETED"));
+      filtered = reports.filter((report) => report.department !== "DELETED");
     } else if (reportType === "LAB" && subtype) {
-      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
+      filtered = reports.filter((r) => r.subDepartment === subtype);
     } else if (reportType === "PHARMACY" && subtype) {
-      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
+      filtered = reports.filter((r) => r.subDepartment === subtype);
     } else {
-      setFilteredReports(reports.filter((report) => report.department === reportType));
+      filtered = reports.filter((report) => report.department === reportType);
     }
+  
+    setFilteredReports(filtered);
   };
 
   const handleCloseSnackbar = () => { 
@@ -591,7 +625,7 @@ const TechnicianDashboard = () => {
 
           {reportTypeTab === "LAB" && (
   <Collapse in={reportTypeTab === "LAB"} timeout="auto" unmountOnExit>
-    <Box sx={{ mt: 1, p: 1 }}>
+    <Box sx={{ mt: 1, p: 1}}>
       <Tabs
         value={subTab}
         onChange={handleSubTabChange}
@@ -657,86 +691,149 @@ const TechnicianDashboard = () => {
               icon="description"
             />
           ) : (
-            <Grid container spacing={2}>
-              {filteredReports.map((report) => (
-                <Grid item xs={12} sm={6} md={4} lg={3} key={report.name}>
-                  <motion.div 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderRadius: 3,
-                        boxShadow: 1,
-                        '&:hover': {
-                          boxShadow: 4,
-                        }
-                      }}
-                    >
-                      <CardContent sx={{ flex: 1 }}>
-                        <Box sx={{ 
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start'
-                        }}>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography
-                              variant="subtitle1"
-                              component="a"
-                              onClick={(e) => handleView(e, report)}
-                              sx={{
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                display: 'block',
-                                mb: 1,
-                                textDecoration: 'none',
-                                color: 'text.primary',
-                                '&:hover': {
-                                  color: 'primary.main',
-                                }
-                              }}
-                            >
-                              {report.name}
-                            </Typography>
+             
+<TableContainer sx={{ mt: 5 }} component={Paper}>
+  {/* <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+    <FormControl variant="outlined" size="small">
+      <InputLabel>Sort By</InputLabel>
+      <Select
+        value={sortOrder}
+        onChange={handleSortChange}
+        label="Sort By"
+      >
+        <MenuItem value="latest">Latest First</MenuItem>
+        <MenuItem value="oldest">Oldest First</MenuItem>
+      </Select>
+    </FormControl>
+  </Box> */}
+  <Table sx={{ minWidth: 650 }} aria-label="simple table">
+    <TableHead>
+      <TableRow>
+        <TableCell>Report Name</TableCell>
+        <TableCell align="center">Uploaded On</TableCell>
+        <TableCell align="right">Actions</TableCell>
+      </TableRow>
+    </TableHead>
+    <TableBody>
+      {filteredReports.map((report) => (
+        <TableRow
+          key={report.name}
+          sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+        >
+          <TableCell component="th" scope="row">
+            <Typography
+              variant="subtitle1"
+              component="a"
+              onClick={(e) => handleView(e, report)}
+              sx={{
+                cursor: "pointer",
+                fontWeight: 600,
+                display: "block",
+                mb: 1,
+                textDecoration: "none",
+                color: "text.primary",
+                "&:hover": {
+                  color: "primary.main",
+                },
+              }}
+            >
+              {report.name}
+            </Typography>
+          </TableCell>
+          <TableCell align="center">{report.uploadDate}</TableCell>
+          <TableCell align="right">
+            <IconButton
+              onClick={(event) => handleMenuOpen(event, report)}
+              sx={{ ml: 1 }}
+            >
+              <MoreVert />
+            </IconButton>
+          </TableCell>
+        </TableRow>
+      ))}
+    </TableBody>
+  </Table>
+</TableContainer>
+          //   <Grid container spacing={2}>
+          //     {filteredReports.map((report) => (
+          //       <Grid item xs={12} sm={6} md={4} lg={3} key={report.name}>
+          //         <motion.div 
+          //           whileHover={{ scale: 1.02 }}
+          //           whileTap={{ scale: 0.98 }}
+          //         >
+          //           <Card
+          //             sx={{
+          //               height: '100%',
+          //               display: 'flex',
+          //               flexDirection: 'column',
+          //               borderRadius: 3,
+          //               boxShadow: 1,
+          //               '&:hover': {
+          //                 boxShadow: 4,
+          //               }
+          //             }}
+          //           >
+          //             <CardContent sx={{ flex: 1 }}>
+          //               <Box sx={{ 
+          //                 display: 'flex',
+          //                 justifyContent: 'space-between',
+          //                 alignItems: 'flex-start'
+          //               }}>
+          //                 <Box sx={{ flex: 1 }}>
+          //                   <Typography
+          //                     variant="subtitle1"
+          //                     component="a"
+          //                     onClick={(e) => handleView(e, report)}
+          //                     sx={{
+          //                       cursor: 'pointer',
+          //                       fontWeight: 600,
+          //                       display: 'block',
+          //                       mb: 1,
+          //                       textDecoration: 'none',
+          //                       color: 'text.primary',
+          //                       '&:hover': {
+          //                         color: 'primary.main',
+          //                       }
+          //                     }}
+          //                   >
+          //                     {report.name}
+          //                   </Typography>
                            
-                            <Typography variant="body2" color="text.secondary">
-                               Uploaded  : {report.uploadDate}
-                            </Typography>
-                            {report.notes ? (
-                             <Typography variant="body2" color="text.secondary">
-                               Notes : {report.notes}
-                            </Typography>
-                            ) : (
-                              <Typography variant="body2" color="text.secondary">
-                               &nbsp;
-                            </Typography>
-                            )}
-                            <Chip
-                              label={report.department}
-                              size="small"
-                              sx={{ 
-                                mt: 2,
-                                bgcolor: 'primary.light',
-                                color: 'primary.contrastText'
-                              }}
-                            />
-                          </Box>
-                          <IconButton 
-                            onClick={(event) => handleMenuOpen(event, report)}
-                            sx={{ ml: 1 }}
-                          >
-                            <MoreVert />
-                          </IconButton>
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
-              ))}
-            </Grid>
+          //                   <Typography variant="body2" color="text.secondary">
+          //                      Uploaded  : {report.uploadDate}
+          //                   </Typography>
+          //                   {report.notes ? (
+          //                    <Typography variant="body2" color="text.secondary">
+          //                      Notes : {report.notes}
+          //                   </Typography>
+          //                   ) : (
+          //                     <Typography variant="body2" color="text.secondary">
+          //                      &nbsp;
+          //                   </Typography>
+          //                   )}
+          //                   <Chip
+          //                     label={report.department}
+          //                     size="small"
+          //                     sx={{ 
+          //                       mt: 2,
+          //                       bgcolor: 'primary.light',
+          //                       color: 'primary.contrastText'
+          //                     }}
+          //                   />
+          //                 </Box>
+          //                 <IconButton 
+          //                   onClick={(event) => handleMenuOpen(event, report)}
+          //                   sx={{ ml: 1 }}
+          //                 >
+          //                   <MoreVert />
+          //                 </IconButton>
+          //               </Box>
+          //             </CardContent>
+          //           </Card>
+          //         </motion.div>
+          //       </Grid>
+          //     ))}
+          //   </Grid>
           )}
         </>
       ) : null}

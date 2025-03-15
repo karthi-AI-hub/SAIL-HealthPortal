@@ -12,6 +12,7 @@ import {
   Tab,
   Divider,
   Snackbar,
+  Collapse,
   Chip,
 } from "@mui/material";
 import { FileDownload, Person, Group } from "@mui/icons-material";
@@ -30,8 +31,10 @@ const EmployeeDashboard = () => {
   const [familyData, setFamilyData] = useState([]);
   const [selectedTab, setSelectedTab] = useState("You");
   const [reportTypeTab, setReportTypeTab] = useState("all");
+  const [subTab, setSubTab] = useState("Hematology");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [sortOrder, setSortOrder] = useState("latest");
   const db = getFirestore();
 
   useEffect(() => {
@@ -75,6 +78,18 @@ const EmployeeDashboard = () => {
     }
   };
 
+  const handleSortChange = (event) => {
+    setSortOrder(event.target.value);
+    const sortedReports = [...filteredReports].sort((a, b) => {
+      if (event.target.value === "latest") {
+        return new Date(b.uploadDate) - new Date(a.uploadDate);
+      } else {
+        return new Date(a.uploadDate) - new Date(b.uploadDate);
+      }
+    });
+    setFilteredReports(sortedReports);
+  };
+  
   const handleDownload = async (report) => {
     try {
       const isExpired = new Date() > new Date(report.expiryTime);
@@ -105,20 +120,39 @@ const EmployeeDashboard = () => {
       setSnackbarOpen(true);
     }
   };
-
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
+    if (newValue === "LAB") {
+      setSubTab("Hematology");
+    } else if (newValue === "PHARMACY") {
+      setSubTab("InPharmacy");
+    }
     fetchReports(newValue === "You" ? employeeId : newValue);
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : newValue === "PHARMACY" ? "InPharmacy" : null);
   };
 
+  const handleSubTabChange = (event, newValue) => {
+    setSubTab(newValue);
+    filterReports(reports, reportTypeTab, newValue);
+  };
+  
   const handleReportTypeTabChange = (event, newValue) => {
     setReportTypeTab(newValue);
-    filterReports(reports, newValue);
+    if (newValue === "LAB") {
+      setSubTab("Hematology");
+    } else if (newValue === "PHARMACY") {
+      setSubTab("InPharmacy");
+    }
+    filterReports(reports, newValue, newValue === "LAB" ? "Hematology" : newValue === "PHARMACY" ? "InPharmacy" : null);
   };
 
-  const filterReports = (reports, reportType) => {
+  const filterReports = (reports, reportType, subtype) => {
     if (reportType === "all") {
-      setFilteredReports(reports.filter((report) => report.department !== "ARCHIVED"));
+      setFilteredReports(reports.filter((report) => report.department !== "DELETED"));
+    } else if (reportType === "LAB" && subtype) {
+      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
+    } else if (reportType === "PHARMACY" && subtype) {
+      setFilteredReports(reports.filter((r) => r.subDepartment === subtype));
     } else {
       setFilteredReports(reports.filter((report) => report.department === reportType));
     }
@@ -218,7 +252,7 @@ const EmployeeDashboard = () => {
               }
             }}
           >
-            {['all', 'BLOOD', 'SUGAR', 'BP', 'ECG', 'SCAN', 'X-RAY', 'OTHERS', 'ARCHIVED'].map((type) => (
+            {['all', 'LAB', 'ECG', 'SCAN', 'XRAY', 'PHARMACY', 'OTHERS'].map((type) => (
               <Tab
                 key={type}
                 label={type === 'all' ? 'All' : type}
@@ -228,6 +262,67 @@ const EmployeeDashboard = () => {
             ))}
           </Tabs>
 
+ {reportTypeTab === "LAB" && (
+  <Collapse in={reportTypeTab === "LAB"} timeout="auto" unmountOnExit>
+    <Box sx={{ mt: 1, p: 1 }}>
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{
+          '& .MuiTab-root': {
+            minWidth: 'unset',
+            px: 2,
+            mx: 0.5,
+            borderRadius: 50,
+            bgcolor: 'action.hover',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText'
+            }
+          }
+        }}
+      >
+        {["Hematology", "Biochemistry", "Microbiology", "Bloodbank"].map((sub) => (
+          <Tab key={sub} label={sub} value={sub} />
+        ))}
+      </Tabs>
+    </Box>
+  </Collapse>
+)}
+
+{reportTypeTab === "PHARMACY" && (
+  <Collapse in={reportTypeTab === "PHARMACY"} timeout="auto" unmountOnExit>
+    <Box sx={{ mt: 1, p: 1 }}>
+      <Tabs
+        value={subTab}
+        onChange={handleSubTabChange}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+        sx={{
+          '& .MuiTab-root': {
+            minWidth: 'unset',
+            px: 2,
+            mx: 0.5,
+            borderRadius: 50,
+            bgcolor: 'action.hover',
+            '&.Mui-selected': {
+              bgcolor: 'primary.main',
+              color: 'primary.contrastText'
+            }
+          }
+        }}
+      >
+        {["InPharmacy", "OutPharmacy"].map((sub) => (
+          <Tab key={sub} label={sub} value={sub} />
+        ))}
+      </Tabs>
+    </Box>
+  </Collapse>
+)}
           {filteredReports.length === 0 ? (
             <EmptyState 
               title="No Reports Found"

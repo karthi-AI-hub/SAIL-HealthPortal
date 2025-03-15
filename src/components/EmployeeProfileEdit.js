@@ -53,6 +53,7 @@ const EmployeeProfileEdit = ({ open, onClose, employeeId }) => {
           const data = docSnap.data();
           delete data.LastLogin;
           delete data.CreatedAt;
+          delete data.ConditionHistory;
           setEmployeeData(data);
           setFormData(data);
           setLoading(false);

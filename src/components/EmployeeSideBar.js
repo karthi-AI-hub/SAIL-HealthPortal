@@ -26,10 +26,10 @@ import {
 import {
   Menu as MenuIcon,
   Home,
-  CalendarMonth,
+  // CalendarMonth,
+  // Assignment,
   LocalHospital,
   Person,
-  Assignment,
   Logout,
 } from "@mui/icons-material";
 
@@ -57,7 +57,7 @@ const EmployeeSidebar = ({ employee, isOpen, onMenuClick, setOpen }) => {
     { text: "Dashboard", icon: <Home />, path: "/employee/dashboard" },
     { text: "Profile", icon: <Person />, path: "/employee/profile" },
     { text: "Doctors", icon: <LocalHospital />, path: "/employee/doctorslist" },
-    { text: "Appointments", icon: <CalendarMonth />, path: "/employee/appointments" },
+    // { text: "Appointments", icon: <CalendarMonth />, path: "/employee/appointments" },
   ];
 
   return (

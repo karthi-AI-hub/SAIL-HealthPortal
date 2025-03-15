@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, Typography, CircularProgress } from "@mui/material";
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Box, CircularProgress } from "@mui/material";
 
 const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartment }) => {
   const [file, setFile] = useState(null);
@@ -7,7 +7,13 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
   const [reportNotes, setReportNotes] = useState("");
 
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    const selectedFile = event.target.files[0];
+    if (selectedFile && selectedFile.type === "application/pdf" && selectedFile.size <= 3 * 1024 * 1024) {
+      setFile(selectedFile);
+    } else {
+      setFile(null);
+      alert("Please select a PDF file smaller than 3MB.");
+    }
   };
 
   const handleUpload = async () => {
@@ -67,29 +73,29 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
   };
 
   return (
-    <Dialog open={open} onClose={() => onClose(false)}>
-      <DialogTitle>Upload Report</DialogTitle>
+    <Dialog open={open} onClose={onClose} aria-labelledby="upload-dialog-title">
+      <DialogTitle id="upload-dialog-title">Upload Report</DialogTitle>
       <DialogContent>
-        <Box sx={{ mt: 2 }}>
-          <Button sx={{mb: 2}} variant="contained" component="label" disabled={loading}>
-            Choose File
-            <input type="file" hidden onChange={handleFileChange} />
-          </Button>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <TextField
-            sx={{ mt: 2 }}
-            margin="dense"
-            label="Notes (optional)"
-            fullWidth
+            type="file"
+            onChange={handleFileChange}
+            inputProps={{ accept: "application/pdf" }}
+          />
+          <TextField
+            label="Notes"
+            multiline
+            rows={4}
             value={reportNotes}
             onChange={(e) => setReportNotes(e.target.value)}
+            variant="outlined"
           />
-          {file && <Typography variant="body2" sx={{ mt: 1 }}>{file.name}</Typography>}
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => onClose(false)} disabled={loading}>Cancel</Button>
-        <Button onClick={handleUpload} disabled={!file || loading}>
-          {loading ? <CircularProgress size={24} /> : 'Upload'}
+        <Button onClick={onClose} color="secondary">Cancel</Button>
+        <Button onClick={handleUpload} color="primary" disabled={!file || loading}>
+          {loading ? <CircularProgress size={24} /> : "Upload"}
         </Button>
       </DialogActions>
     </Dialog>

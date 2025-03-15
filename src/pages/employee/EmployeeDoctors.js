@@ -67,10 +67,10 @@ const EmployeeDoctors = () => {
     (doctor.Specialization && doctor.Specialization.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const handleBookAppointment = (doctor) => {
-    setSelectedDoctor(doctor);
-    setOpenAppointmentModal(true);
-  };
+  // const handleBookAppointment = (doctor) => {
+  //   setSelectedDoctor(doctor);
+  //   setOpenAppointmentModal(true);
+  // };
 
   const handleViewProfile = (doctor) => {
     const filteredDoctor = { ...doctor };
@@ -93,7 +93,7 @@ const EmployeeDoctors = () => {
         <Typography variant="h5" fontWeight="bold" color="primary">
           Doctor Profile
         </Typography>
-        <Button
+        {/* <Button
           aria-label="close"
           onClick={() => setOpenProfileModal(false)}
           sx={{
@@ -104,7 +104,7 @@ const EmployeeDoctors = () => {
           }}
         >
           Close
-        </Button>
+        </Button> */}
       </DialogTitle>
       <DialogContent dividers>
         <Box sx={{ textAlign: "center", mb: 3 }}>
@@ -296,7 +296,7 @@ const EmployeeDoctors = () => {
                             </Button>
                           </Tooltip>
 
-                          <Tooltip title="Book Appointment" arrow>
+                          {/* <Tooltip title="Book Appointment" arrow>
                             <Button
                               variant="contained"
                               color="secondary"
@@ -312,7 +312,7 @@ const EmployeeDoctors = () => {
                             >
                               Book Appointment
                             </Button>
-                          </Tooltip>
+                          </Tooltip> */}
                         </CardContent>
                       </CardActionArea>
                     </Card>
