@@ -34,6 +34,7 @@ import TechnicianLogin from "./pages/technician/TechnicianLogin";
 import TechnicianDashboard from "./pages/technician/TechnicianDashboard";
 import TechnicianProfile from "./pages/technician/TechnicianProfile";
 import TechnicianPatients from "./pages/technician/TechnicianPatients";
+import TexhnicianReports from "./pages/technician/TexhnicainReports";
 
 function App() {
   return (
@@ -69,6 +70,7 @@ function App() {
                   <Route path="/technician/dashboard" element={<TechnicianDashboard />} />
                   <Route path="/technician/profile" element={<TechnicianProfile />} />
                   <Route path="/technician/employeeList" element={<TechnicianPatients />} />
+                  <Route path="/technician/reports" element={<TexhnicianReports />} />                  
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

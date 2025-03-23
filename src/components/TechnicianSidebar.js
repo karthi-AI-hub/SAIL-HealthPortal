@@ -29,6 +29,7 @@ import {
   Person,
   Logout,
   LocalHospital,
+  Description,
 } from "@mui/icons-material";
 
 const TechnicianSidebar = ({ technician, isOpen, onMenuClick, setOpen }) => {
@@ -54,6 +55,7 @@ const TechnicianSidebar = ({ technician, isOpen, onMenuClick, setOpen }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Home />, path: "/technician/dashboard" },
     { text: "Profile", icon: <Person />, path: "/technician/profile" },
+    { text: "Reports", icon : <Description/>, path: "/technician/reports"},
     { text: "Employee", icon: <LocalHospital />, path: "/technician/employeeList"},
   ];
 

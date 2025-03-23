@@ -87,8 +87,7 @@ const TechnicianPatients = () => {
       const query = searchQuery.toLowerCase();
       return (
         patient.EmployeeID?.toLowerCase().includes(query) ||
-        patient.Name?.toLowerCase().includes(query) ||
-        patient.Phone?.toLowerCase().includes(query)
+        patient.Name?.toLowerCase().includes(query)
       );
     })
     .sort((a, b) => {
@@ -220,7 +219,7 @@ const TechnicianPatients = () => {
           <TextField
             fullWidth
             variant="outlined"
-            placeholder="Search Employees by ID, Name, or phone..."
+            placeholder="Search EmployeeID or Name"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             InputProps={{

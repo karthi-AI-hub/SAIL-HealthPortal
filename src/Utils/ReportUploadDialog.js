@@ -8,11 +8,11 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
-    if (selectedFile && selectedFile.type === "application/pdf" && selectedFile.size <= 3 * 1024 * 1024) {
+    if (selectedFile && selectedFile.size <= 3 * 1024 * 1024) {
       setFile(selectedFile);
     } else {
       setFile(null);
-      alert("Please select a PDF file smaller than 3MB.");
+      alert("Please select a file smaller than 10MB.");
     }
   };
 
@@ -80,7 +80,7 @@ const ReportUploadDialog = ({ open, onClose, patientId, department, subDepartmen
           <TextField
             type="file"
             onChange={handleFileChange}
-            inputProps={{ accept: "application/pdf" }}
+            inputProps={{ accept: "*" }} // Allow all file types
           />
           <TextField
             label="Notes"
