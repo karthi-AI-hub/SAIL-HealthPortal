@@ -27,6 +27,7 @@ import {
   Menu as MenuIcon,
   Home,
   CalendarMonth,
+  Description,
   LocalHospital,
   Person,
   Logout,
@@ -55,6 +56,7 @@ const DoctorSidebar = ({ doctor, isOpen, onMenuClick, setOpen }) => {
   const menuItems = [
     { text: "Dashboard", icon: <Home />, path: "/doctor/dashboard" },
     { text: "Profile", icon: <Person />, path: "/doctor/profile" },
+    { text: "Reports", icon : <Description/>, path: "/doctor/reports"},
     { text: "Employee", icon: <LocalHospital />, path: "/doctor/employeeList" },
     // { text: "Appointments", icon: <CalendarMonth />, path: "/doctor/appointments" },
   ];
