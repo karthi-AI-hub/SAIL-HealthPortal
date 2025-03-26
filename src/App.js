@@ -28,13 +28,13 @@ import DoctorDashboard from "./pages/doctor/DoctorDashboard";
 import DoctorProfile from "./pages/doctor/DoctorProfile";
 import DoctorPatients from "./pages/doctor/DoctorPatients";
 import DoctorAppointments from "./pages/doctor/DoctorAppointments";
-
+import DoctorReports from "./pages/doctor/DoctorReports";
 import TechnicianRegister from "./pages/technician/TechnicianRegister";
 import TechnicianLogin from "./pages/technician/TechnicianLogin";
 import TechnicianDashboard from "./pages/technician/TechnicianDashboard";
 import TechnicianProfile from "./pages/technician/TechnicianProfile";
 import TechnicianPatients from "./pages/technician/TechnicianPatients";
-import TechnicianReports from "./pages/technician/TexhnicainReports";
+import TechnicianReports from "./pages/technician/TechnicainReports";
 
 function App() {
   return (
@@ -63,7 +63,7 @@ function App() {
                   <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
                   <Route path="/doctor/profile" element={<DoctorProfile />} />
                   <Route path="/doctor/employeeList" element={<DoctorPatients />} />
-                  <Route path="/doctor/reports" element={<TechnicianReports />} />                  
+                  <Route path="/doctor/reports" element={<DoctorReports />} />                  
                   {/* <Route path="/doctor/appointments" element={<DoctorAppointments />} /> */}
                 </Route>
 

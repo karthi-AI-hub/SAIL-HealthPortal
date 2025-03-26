@@ -28,7 +28,7 @@ import {
 import { Search, Clear, Close } from "@mui/icons-material";
 import { format } from "date-fns";
 
-const TechnicianReports = () => {
+const DoctorReports = () => {
   const [reports, setReports] = useState([]);
   const [filteredReports, setFilteredReports] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,8 +39,8 @@ const TechnicianReports = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [reportsPerPage] = useState(10);
   const [selectedReport, setSelectedReport] = useState(null); 
-  const [startDate, setStartDate] = useState(""); // Start date for filtering
-  const [endDate, setEndDate] = useState(""); // End date for filtering
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   
   useEffect(() => {
     fetchReports();
@@ -52,12 +52,11 @@ const TechnicianReports = () => {
 
     try {
       const formattedStartDate = startDate
-        ? format(new Date(startDate), "dd-MM-yyyy")
+        ? format(new Date(startDate), "yyyy-MM-dd")
         : null;
       const formattedEndDate = endDate
-        ? format(new Date(endDate), "dd-MM-yyyy")
+        ? format(new Date(endDate), "yyyy-MM-dd")
         : null;
-
 
       const response = await fetch("https://sail-backend.onrender.com/fetch-reports", {
         method: "POST",
@@ -71,7 +70,10 @@ const TechnicianReports = () => {
 
       const data = await response.json();
 
-      console.log("Backend response:", data);
+      // console.log("formattedStartDate:", formattedStartDate);
+      // console.log("formattedEndDate:", formattedEndDate);
+      // console.log("Backend response:", data);
+
       if (Array.isArray(data)) {
         setReports(data);
         setFilteredReports(data);
@@ -295,7 +297,6 @@ const TechnicianReports = () => {
         </>
       )}
 
-      {/* Dialog for Viewing Report */}
       <Dialog open={!!selectedReport} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>
           Report Details
@@ -312,6 +313,29 @@ const TechnicianReports = () => {
               <Typography variant="h6">Name: {selectedReport.name}</Typography>
               <Typography variant="body1">Department: {selectedReport.department}</Typography>
               <Typography variant="body1">Notes: {selectedReport.notes || "N/A"}</Typography>
+              <Typography variant="body1">
+                Instructions:
+                {Array.isArray(selectedReport.instructions) && selectedReport.instructions.length > 0 ? (
+                  <ul>
+                    {selectedReport.instructions.map((inst, index) => (
+                      <li key={index}>
+                        <strong>Text:</strong> {inst.text} <br />
+                        <strong>Doctor ID:</strong> {inst.doctorId} <br />
+                        <strong>Timestamp:</strong> {new Date(inst.timestamp).toLocaleString("en-IN", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                        })}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  "N/A"
+                )}
+              </Typography>
               <Typography variant="body1">
                 Uploaded On: {selectedReport.uploadDate}
               </Typography>
@@ -333,4 +357,4 @@ const TechnicianReports = () => {
   );
 };
 
-export default TechnicianReports;
+export default DoctorReports;
